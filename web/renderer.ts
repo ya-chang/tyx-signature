@@ -26,7 +26,7 @@ const corners=(b:Box):Point[]=>[{x:b.minX,y:b.minY},{x:b.maxX,y:b.minY},{x:b.max
 const rotate=(p:Point,a:number):Point=>({x:p.x*Math.cos(a)-p.y*Math.sin(a),y:p.x*Math.sin(a)+p.y*Math.cos(a)});
 // Inlined timing helpers keep the heavy animation engine out of the initial bundle.
 const continuousMotionTiming={intro:.8,outro:1.5,fps:30};
-const ORNATE_IDS=new Set(['orbit','bloom','crystal-vine','butterfly','lotus','umbrella','unicorn','snowflake','wings','fan','dragon','moon','stellar','petals']);
+const ORNATE_IDS=new Set(['orbit','bloom','crystal-vine','butterfly','lotus','umbrella','unicorn','snowflake','wings','fan','dragon','moon','stellar','petals','aurora','rainbow','crystal-rain','nebula','firefly','rose']);
 const isOrnatePreset=(id:string):boolean=>ORNATE_IDS.has(id);
 function motionIntroDuration(selection:MotionSelection,duration:number):number{
  if(selection.intro==='none')return 0;
@@ -307,6 +307,45 @@ function reactionPoint(group:PersonScene,id:string,p:Point,time:number):Point{
 export function decorationPoint(scene:PreparedScene,index:0|1,strokeId:string,u:number,time:number):Point|null{
  const group=scene.people.find(g=>g.index===index),stroke=group?.decoration.strokes.find(s=>s.id===strokeId);if(!group||!stroke)return null;const raw=stroke.curve?pointAt(stroke.curve,clamp(u,0,1)):stroke.eye;if(!raw)return null;const p=reactionPoint(group,stroke.id,raw,time),d=group.decoration,q=world({x:d.center.x+p.x*d.radius/50,y:d.center.y+p.y*d.radius/50},group);return {x:q.x+group.config.decoration.offsetX*scene.width,y:q.y+group.config.decoration.offsetY*scene.height};
 }
+/** Compute decoration trajectory offset based on per-person trajectory config.
+ * Six modes: follow (pen-following), circular (orbit), zigzag, spiral, wave, random.
+ * Returns offset in screen coordinates, applied to decoration position. */
+function computeTrajectoryOffset(group:PersonScene,time:number):{x:number;y:number}{
+  const traj=group.config.trajectory;
+  if(!traj.enabled)return{x:0,y:0};
+  const phase0=group.plan.writing;
+  if(time<phase0.start||time>=phase0.end)return{x:0,y:0};
+  const u=clamp((time-phase0.start)/(phase0.end-phase0.start),0,1);
+  const intensity=traj.intensity,radius=traj.radius,speed=traj.speed;
+  switch(traj.mode){
+    case'follow':{
+      const pen=strokeAt(group.brush,clamp(u+.022*Math.sin(Math.PI*2*u)-.012*Math.sin(Math.PI*4*u),0,1)*group.brush.duration);
+      if(!pen)return{x:0,y:0};
+      return{x:(pen.point.x-group.brush.box.minX)*group.scale*.12*intensity,y:(pen.point.y-group.brush.box.minY)*group.scale*.12*intensity};
+    }
+    case'circular':{
+      const angle=u*Math.PI*2*speed;
+      return{x:Math.cos(angle)*radius*intensity,y:Math.sin(angle)*radius*intensity*.6};
+    }
+    case'zigzag':{
+      return{x:Math.sin(u*Math.PI*4*speed)*radius*intensity,y:Math.cos(u*Math.PI*2*speed)*radius*intensity*.3};
+    }
+    case'spiral':{
+      const angle=u*Math.PI*4*speed,dist=u*radius*intensity;
+      return{x:Math.cos(angle)*dist,y:Math.sin(angle)*dist*.6};
+    }
+    case'wave':{
+      return{x:Math.sin(u*Math.PI*2*speed)*radius*intensity*.5,y:Math.cos(u*Math.PI*3*speed)*radius*intensity*.3};
+    }
+    case'random':{
+      const n1=Math.sin(u*127.1+311.7)*43758.5453-Math.floor(Math.sin(u*127.1+311.7)*43758.5453);
+      const n2=Math.sin(u*127.1+43.7)*43758.5453-Math.floor(Math.sin(u*127.1+43.7)*43758.5453);
+      return{x:(n1-.5)*2*radius*intensity,y:(n2-.5)*2*radius*intensity*.6};
+    }
+    default:return{x:0,y:0};
+  }
+}
+
 function drawDecoration(context:CanvasRenderingContext2D,scene:Pick<PreparedScene,'width'|'height'|'config'>,group:PersonScene,time:number):void{
  const {decoration:d,config,plan}=group;if(!d.strokes.length||time<plan.decoration.start)return;
  // 装饰进书写轨迹：装饰跟随签名书写笔画的当前位置

@@ -343,6 +343,19 @@ function App(){
                 <Range title="装饰水平位置" value={person.decoration.offsetX*100} min={-45} max={45} step={.5} suffix="%" displayDecimals={2} onChange={value=>changePerson(next=>{next.decoration.offsetX=value/100;})}/>
                 <Range title="装饰垂直位置" value={person.decoration.offsetY*100} min={-45} max={45} step={.5} suffix="%" displayDecimals={2} onChange={value=>changePerson(next=>{next.decoration.offsetY=value/100;})}/>
               </div></Details>}
+              {person.decoration.id!=='none'&&<Details title="装饰轨迹"><div className="advanced-grid">
+                <Toggle title="启用轨迹" checked={person.trajectory.enabled} onChange={value=>changePerson(next=>{next.trajectory.enabled=value;})}/>
+                <div className="field-label">轨迹模式</div>
+                <div className="format-switch trajectory-mode-switch" role="group" aria-label="装饰轨迹模式">
+                  {(['follow','circular','zigzag','spiral','wave','random'] as const).map(mode=>{
+                    const labels={follow:'跟随笔迹',circular:'圆环环绕',zigzag:'锯齿摆动',spiral:'螺旋旋绕',wave:'波浪起伏',random:'随机飘动'};
+                    return <button type="button" key={mode} className="format-option trajectory-option" aria-pressed={person.trajectory.mode===mode} disabled={!person.trajectory.enabled} onClick={()=>changePerson(next=>{next.trajectory.mode=mode;})}>{labels[mode]}</button>;
+                  })}
+                </div>
+                <Range title="轨迹强度" value={person.trajectory.intensity} min={0} max={1} step={.05} onChange={value=>changePerson(next=>{next.trajectory.intensity=value;})}/>
+                <Range title="轨迹半径" value={person.trajectory.radius} min={0} max={300} step={5} suffix="px" onChange={value=>changePerson(next=>{next.trajectory.radius=value;})}/>
+                <Range title="轨迹速度" value={person.trajectory.speed} min={.1} max={3} step={.1} suffix="×" onChange={value=>changePerson(next=>{next.trajectory.speed=value;})}/>
+              </div></Details>}
               <div className="decoration-categories" role="group" aria-label="装饰分类">{decorationCategories.map(category=><button type="button" className="decoration-category" key={category.id} aria-pressed={decorationCategory===category.id} onClick={()=>setDecorationCategory(category.id)}>{category.label}</button>)}</div>
               <div className="decoration-grid" role="group" aria-label={decorationCategories.find(category=>category.id===decorationCategory)?.label+'图案'}>{decorationCatalog.filter(item=>item.category===decorationCategory).map((item,index)=><button type="button" key={item.id} data-tour={index===0?'decoration-library':undefined} className={['decoration-choice',person.decoration.id===item.id?'selected':''].join(' ')} aria-pressed={person.decoration.id===item.id} onClick={()=>changePerson(next=>{next.decoration.id=item.id;})}><DecorationThumbnail id={item.id} person={person} background={config.canvas.background} backgroundGradient={config.canvas.gradient} transparent={config.canvas.transparent}/><span>{item.label}</span></button>)}</div>
               <p className="export-note">点击画布中的装饰即可拖动；选中后也可用方向键微调位置。</p>
@@ -361,7 +374,7 @@ function App(){
             </section>
           </div>}
           {tab==='animation'&&<div className="inspector-cards">
-              <Toggle title="装饰进书写轨迹" checked={config.animation.decorationTrajectory} onChange={value=>changeMotion({decorationTrajectory:value})}/>
+              <Toggle title="装饰进书写轨迹" checked={config.animation.decorationTrajectory} onChange={value=>{changeMotion({decorationTrajectory:value});update(next=>{next.people.forEach(p=>{p.trajectory.enabled=value;});});}}/>
             <section className="inspector-group">
               <h2 className="section-heading">动画设置</h2>
               <Range title="动画时长" value={config.timing.duration} min={3} max={15} step={.5} suffix="秒" onChange={value=>update(next=>{next.timing.duration=value;next.timing.hold=Math.min(next.timing.hold,value-2);})}/><Range title="书写占比" value={config.timing.writingRatio} min={.35} max={.8} step={.01} displayDecimals={2} onChange={value=>update(next=>{next.timing.writingRatio=value;})}/>

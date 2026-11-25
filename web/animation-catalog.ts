@@ -20,6 +20,12 @@ export const outroPresets = [
   {id:'wind-drift',label:'风中飘散',description:'墨迹被风吹散成细碎光点，随风飘向远方退场。'},
   {id:'ink-splash',label:'墨溅收束',description:'墨迹向四周溅开成墨点，随后聚拢收束消失。'},
   {id:'crystal-shatter',label:'晶碎退场',description:'墨迹凝结成晶体后碎裂成光屑，缓缓飘落退场。'},
+  {id:'mirror-flip',label:'镜面翻转',description:'签名沿水平轴翻转成镜像，逐渐扭曲淡出退场。'},
+  {id:'aurora-fade',label:'极光消散',description:'极光带横向扫过，墨迹随极光波纹扭曲后消散。'},
+  {id:'cascade-drop',label:'瀑布坠落',description:'墨迹化作水滴向下坠落，如瀑布般消散退场。'},
+  {id:'prism-shatter',label:'棱镜碎裂',description:'墨迹凝结成棱镜后碎裂成彩色碎片，四散飞溅退场。'},
+  {id:'echo-loop',label:'回声环绕',description:'墨迹化作回声波纹层层向外扩散，逐渐淡出消失。'},
+  {id:'dawn-rise',label:'晨光升腾',description:'墨迹向上飘升成光点，如晨光中缓缓消散退场。'},
   {id:'none',label:'无动画',description:'写完后保留签名。'},
 ] as const;
 

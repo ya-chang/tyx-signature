@@ -1,6 +1,6 @@
 import type {OrnateFrame} from './ornate-types';
 
-export type BotanicalPreset='crystal-vine'|'butterfly'|'lotus'|'umbrella'|'snowflake'|'petals';
+export type BotanicalPreset='crystal-vine'|'butterfly'|'lotus'|'umbrella'|'snowflake'|'petals'|'firefly'|'rose';
 type Point={x:number;y:number};
 type Trace=(context:CanvasRenderingContext2D)=>void;
 const TAU=Math.PI*2;
@@ -268,6 +268,55 @@ function petals(context:CanvasRenderingContext2D,frame:OrnateFrame):void{
 }
 
 /** Original vector motifs; no reference-video frames, names, or text are retained. */
+
+/** 萤火夜游：群聚萤火光点带尾迹。 */
+function firefly(context:CanvasRenderingContext2D,frame:OrnateFrame):void{
+ const {time,open,color,accent}=frame,light=mix(accent,'#ffffff',.85);
+ context.save();context.scale(1.4,1.4);
+ for(let i=0;i<16;i++){
+  const seed=i*1.7,phase=time*(.8+(i%3)*.2)+seed;
+  const x=Math.sin(phase)*65,y=Math.cos(phase*.7+seed)*45;
+  const r=4+Math.sin(time*3+i)*2;
+  // 尾迹
+  const trail:Point[]=[];
+  for(let j=0;j<=6;j++){const t=time-.04*j,px=Math.sin(t*(.8+(i%3)*.2)+seed)*65,py=Math.cos(t*.7+seed)*45;trail.push({x:px,y:py});}
+  shape(context,c=>{c.moveTo(trail[0].x,trail[0].y);for(const p of trail.slice(1))c.lineTo(p.x,p.y);},null,light,.8,.15+open*.3,3);
+  // 光点
+  star(context,x,y,r,i%2?accent:light,.4+open*.6,time+i);
+  shape(context,c=>{c.moveTo(x-r*1.5,y);c.quadraticCurveTo(x,y,x,y-r*2);c.quadraticCurveTo(x,y,x+r*1.5,y);c.quadraticCurveTo(x,y,x,y+r*2);c.quadraticCurveTo(x,y,x-r*1.5,y);},color,null,1,.3+open*.5,r*.8);
+ }
+ context.restore();
+}
+
+/** 玫瑰绽芯：玫瑰层层绽放。 */
+function rose(context:CanvasRenderingContext2D,frame:OrnateFrame):void{
+ const {time,open,color,accent}=frame,light=mix(accent,'#ffffff',.82);
+ context.save();context.scale(1.3,1.3);
+ // 外层花瓣
+ for(let layer=0;layer<3;layer++){
+  const count=5+layer*2,radius=30-layer*8,layerOpen=clamp(open*(1.2-layer*.3));
+  for(let i=0;i<count;i++){
+   const angle=i/count*Math.PI*2+time*.2+layer*.5;
+   const petalLen=18+layer*4,petalW=8+layer*2;
+   context.save();context.translate(0,0);context.rotate(angle);
+   drawOrganicPetal(context,petalLen*layerOpen,petalW,i%2?accent:color,light,.5+layerOpen*.5);
+   context.restore();
+ }
+ }
+ // 花芯
+ for(let i=0;i<6;i++){
+  const angle=i/6*Math.PI*2+time*.3;
+  const r=6+Math.sin(time*2+i)*2;
+  star(context,Math.cos(angle)*5,Math.sin(angle)*5,r*.6,light,.4+open*.6,time+i);
+ }
+ // 露珠
+ for(let i=0;i<4;i++){
+  const angle=i/4*Math.PI*2+1.5,r=35;
+  oval(context,Math.cos(angle)*r,Math.sin(angle)*r,3,4,mix(accent,'#ffffff',.5),.4+open*.5,1);
+ }
+ context.restore();
+}
+
 export function drawBotanicalMotif(context:CanvasRenderingContext2D,id:BotanicalPreset,frame:OrnateFrame):void{
  if(frame.open<=0)return;
  context.save();
@@ -276,7 +325,9 @@ export function drawBotanicalMotif(context:CanvasRenderingContext2D,id:Botanical
  else if(id==='lotus')lotus(context,frame);
  else if(id==='umbrella')umbrella(context,frame);
  else if(id==='snowflake')snowflake(context,frame);
- else petals(context,frame);
+ else if(id==='petals')petals(context,frame);
+ else if(id==='firefly')firefly(context,frame);
+ else rose(context,frame);
  context.restore();
 }
 

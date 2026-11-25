@@ -45,16 +45,20 @@ test('all output aspects are even 1080p frames and the brush adapter selects ori
 test('defaults clone the default design and never share nested state',()=>{
   const first=defaultWebConfig();
   const expected={...structuredClone(defaultDesign),animation:{...defaultDesign.animation,decorationTrajectory:false},canvas:{...defaultDesign.canvas,transparent:false}};
+  expected.people.forEach(p=>{p.trajectory={enabled:false,mode:'follow',intensity:.5,radius:60,speed:1};});
   assert.deepEqual(first,expected);
-  assert.deepEqual(defaultPerson(1),defaultDesign.people[1]);
+  const expectedPerson1={...structuredClone(defaultDesign.people[1]),trajectory:{enabled:false,mode:'follow',intensity:.5,radius:60,speed:1}};
+  assert.deepEqual(defaultPerson(1),expectedPerson1);
   first.people[0].name='Changed';first.people[0].position.x=.2;first.people[0].decoration.scale=.5;first.audio.volume=0;
   const person=defaultPerson();person.ink.color='#000000';
   assert.deepEqual(defaultWebConfig(),expected);
-  assert.deepEqual(defaultPerson(),defaultDesign.people[0]);
+  const expectedPerson0={...structuredClone(defaultDesign.people[0]),trajectory:{enabled:false,mode:'follow',intensity:.5,radius:60,speed:1}};
+  assert.deepEqual(defaultPerson(),expectedPerson0);
 });
 
 test('saved designs and imported files without transparency default to an opaque canvas without changing their content',()=>{
   const text=JSON.stringify(defaultDesign),expected={...structuredClone(defaultDesign),animation:{...defaultDesign.animation,decorationTrajectory:false},canvas:{...defaultDesign.canvas,transparent:false}};
+  expected.people.forEach(p=>{p.trajectory={enabled:false,mode:'follow',intensity:.5,radius:60,speed:1};});
   assert.deepEqual(parseConfigFile(text),expected);
   for(const key of [STORAGE_KEY,'tyx-signature.website.v6']){
     const loaded=loadConfig({getItem:requested=>requested===key?text:null});

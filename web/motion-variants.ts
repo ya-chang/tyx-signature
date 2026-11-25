@@ -4,7 +4,7 @@ import {drawAuthoredOutroInk} from './outro-choreography';
 import type {OutroAppearance} from './motion-palette';
 import type {LinearGradientPaint} from './gradient';
 
-export type OutroVariant='vortex'|'petal-close'|'sweep-away'|'bloom-fade'|'ripple-out'|'starburst'|'wind-drift'|'ink-splash'|'crystal-shatter';
+export type OutroVariant='vortex'|'petal-close'|'sweep-away'|'bloom-fade'|'ripple-out'|'starburst'|'wind-drift'|'ink-splash'|'crystal-shatter'|'mirror-flip'|'aurora-fade'|'cascade-drop'|'prism-shatter'|'echo-loop'|'dawn-rise';
 export type MotionGeometry={center:Point;radius:number;unit:number};
 export type VariantInk={id:number;paintKey:string;samples:readonly InkSample[];color:string;gradient?:LinearGradientPaint;glowColor:string;glowStrength:number;glowRadius:number};
 

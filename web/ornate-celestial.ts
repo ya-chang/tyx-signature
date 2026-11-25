@@ -1,6 +1,6 @@
 import type {OrnateFrame} from './ornate-types';
 
-export type CelestialPreset='orbit'|'bloom'|'moon'|'stellar';
+export type CelestialPreset='orbit'|'bloom'|'moon'|'stellar'|'aurora'|'rainbow'|'crystal-rain'|'nebula';
 type Point={x:number;y:number};
 const TAU=Math.PI*2;
 const clamp=(n:number)=>Math.max(0,Math.min(1,n));
@@ -12,9 +12,9 @@ function gradient(ctx:CanvasRenderingContext2D,a:Point,b:Point,colors:readonly s
  if(typeof ctx.createLinearGradient!=='function')return colors[Math.floor(colors.length/2)];
  const fill=ctx.createLinearGradient(a.x,a.y,b.x,b.y);colors.forEach((color,index)=>fill.addColorStop(index/Math.max(1,colors.length-1),color));return fill;
 }
-function line(ctx:CanvasRenderingContext2D,points:readonly Point[],color:string,width:number,alpha=1,glow=0):void{
+function line(ctx:CanvasRenderingContext2D,points:readonly Point[],color:string|CanvasGradient,width:number,alpha=1,glow=0):void{
  if(points.length<2||alpha<=0)return;
- ctx.save();ctx.globalAlpha*=alpha;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';ctx.shadowColor=color;ctx.shadowBlur=glow;ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))ctx.lineTo(p.x,p.y);ctx.stroke();ctx.restore();
+ ctx.save();ctx.globalAlpha*=alpha;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';ctx.shadowColor=typeof color==='string'?color:'#ffffff';ctx.shadowBlur=glow;ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);for(const p of points.slice(1))ctx.lineTo(p.x,p.y);ctx.stroke();ctx.restore();
 }
 function polygon(ctx:CanvasRenderingContext2D,points:readonly Point[],fill:string|CanvasGradient,edge:string,width=1.5,alpha=1,glow=0):void{
  if(!points.length||alpha<=0)return;
@@ -179,10 +179,95 @@ function drawStellar(ctx:CanvasRenderingContext2D,f:OrnateFrame):void{
 // These are the same primitives used above, rather than companion approximations.
 export {line as drawCelestialLine,spark as drawCelestialSpark,diamond as drawCelestialDiamond,drop as drawCelestialDrop,petal as drawCelestialPetal};
 
+
+/** 极光帘幕：多层流动极光带，带渐变和光丝。 */
+function drawAurora(ctx:CanvasRenderingContext2D,frame:OrnateFrame):void{
+ const {time,open,color,accent}=frame,light=mix(color,'#ffffff',.88);
+ ctx.save();ctx.scale(1.4,1.4);
+ for(let band=0;band<4;band++){
+  const y=-60+band*35,amp=25+band*8,phase=time*(.8+band*.15)+band*1.2;
+  const points:Point[]=[];
+  for(let i=0;i<=48;i++){const u=i/48,x=-100+u*200,wave=Math.sin(u*Math.PI*2+phase)*amp*open;points.push({x,y:y+wave});}
+  const grad=gradient(ctx,{x:-100,y:y-amp},{x:100,y:y+amp},[mix(accent,'#ffffff',.6),color,mix(accent,'#003322',.4)]);
+  line(ctx,points,grad,3.5+band*.5,.5+open*.4,12);
+  line(ctx,points,mix(color,'#ffffff',.7),1.2,.3+open*.3,4);
+ }
+ // 光丝
+ for(let i=0;i<6;i++){
+  const x=-80+i*28,phase=time*1.2+i*.7;
+  const pts=[{x,y:-80},{x:x+Math.sin(phase)*15,y:-30},{x:x+Math.sin(phase+1)*20,y:20},{x:x+Math.sin(phase+2)*15,y:70}];
+  line(ctx,pts,accent,1.5,.2+open*.3,6);
+ }
+ ctx.restore();
+}
+
+/** 虹桥流光：彩虹弧桥带光粒。 */
+function drawRainbow(ctx:CanvasRenderingContext2D,frame:OrnateFrame):void{
+ const {time,open,color,accent}=frame,light=mix(color,'#ffffff',.85);
+ const colors=[color,accent,mix(accent,'#ffffff',.5),mix(color,'#ff6b9d',.5),mix(accent,'#6bb5ff',.5)];
+ ctx.save();ctx.scale(1.3,1.3);
+ for(let ring=0;ring<5;ring++){
+  const r=50+ring*22,points:Point[]=[];
+  for(let i=0;i<=40;i++){const a=Math.PI+i/40*Math.PI,x=Math.cos(a)*r,y=Math.sin(a)*r*.55+10;points.push({x,y});}
+  line(ctx,points,colors[ring],4-ring*.4,.3+open*.5,10);
+ }
+ // 光粒
+ for(let i=0;i<12;i++){
+  const a=Math.PI+i/12*Math.PI,r=50+Math.sin(time*2+i)*20,x=Math.cos(a)*r,y=Math.sin(a)*r*.55+10;
+  spark(ctx,{x,y},4+Math.sin(time*3+i)*2,accent,.4+open*.5,time+i);
+ }
+ ctx.restore();
+}
+
+/** 晶雨落痕：晶滴从上方坠落铺开。 */
+function drawCrystalRain(ctx:CanvasRenderingContext2D,frame:OrnateFrame):void{
+ const {time,open,color,accent}=frame,light=mix(color,'#ffffff',.88);
+ ctx.save();ctx.scale(1.3,1.3);
+ for(let row=0;row<5;row++){
+  const y=-70+row*30,phase=time*(1+row*.2)+row*.8;
+  for(let i=0;i<5+row;i++){
+   const x=-60+i*22+Math.sin(phase+i)*8;
+   const dropY=y+Math.sin(phase*1.5+i*.5)*15*open;
+   const r=5+row*.5;
+   diamond(ctx,{x,y:dropY},r,color,accent,time*.5+i);
+  }
+ }
+ // 水珠连线
+ for(let i=0;i<8;i++){
+  const x=-60+i*18,phase=time*1.5+i;
+  const pts=[{x,y:-70},{x:x+Math.sin(phase)*5,y:-35},{x:x+Math.sin(phase+1)*8,y:0},{x:x+Math.sin(phase+2)*5,y:40}];
+  line(ctx,pts,mix(accent,'#ffffff',.5),1.2,.2+open*.4,4);
+ }
+ ctx.restore();
+}
+
+/** 星云漩涡：旋转星云云团带星尘。 */
+function drawNebula(ctx:CanvasRenderingContext2D,frame:OrnateFrame):void{
+ const {time,open,color,accent}=frame,light=mix(color,'#ffffff',.85);
+ ctx.save();ctx.scale(1.4,1.4);
+ // 螺旋臂
+ for(let arm=0;arm<3;arm++){
+  const phase=time*.6+arm*2.1;
+  const points:Point[]=[];
+  for(let i=0;i<=60;i++){const u=i/60,a=u*Math.PI*2*1.5+phase,r=u*70;points.push({x:Math.cos(a)*r,y:Math.sin(a)*r*.7});}
+  line(ctx,points,arm===1?accent:mix(color,'#ffffff',.5),3-arm*.5,.2+open*.4,10);
+  line(ctx,points,mix(accent,'#ffffff',.7),1,.15+open*.25,3);
+ }
+ // 星尘
+ for(let i=0;i<20;i++){
+  const a=time*.5+i*.3,r=20+Math.sin(time*1.5+i)*40;
+  const x=Math.cos(a)*r,y=Math.sin(a)*r*.7;
+  spark(ctx,{x,y},2+Math.sin(time*2+i)*1.5,i%2?accent:light,.3+open*.5,time+i);
+ }
+ // 核心
+ diamond(ctx,{x:0,y:0},12,color,accent,time*.3);
+ ctx.restore();
+}
+
 export function drawCelestialMotif(ctx:CanvasRenderingContext2D,id:CelestialPreset,frame:OrnateFrame):void{
  const open=clamp(frame.open);if(open<=.0001)return;
  ctx.save();ctx.globalAlpha*=Math.min(1,open*3.2);const spread=.07+.93*ease(open);ctx.scale(spread,spread);
- if(id==='orbit')drawOrbit(ctx,frame);else if(id==='bloom')drawBloom(ctx,frame);else if(id==='moon')drawMoon(ctx,frame);else drawStellar(ctx,frame);
+ if(id==='orbit')drawOrbit(ctx,frame);else if(id==='bloom')drawBloom(ctx,frame);else if(id==='moon')drawMoon(ctx,frame);else if(id==='stellar')drawStellar(ctx,frame);else if(id==='aurora')drawAurora(ctx,frame);else if(id==='rainbow')drawRainbow(ctx,frame);else if(id==='crystal-rain')drawCrystalRain(ctx,frame);else drawNebula(ctx,frame);
  ctx.restore();
 }
 

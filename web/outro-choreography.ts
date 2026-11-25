@@ -3,7 +3,7 @@ import {appendCapsules} from './brush-engine';
 import {drawInkRibbonOutro} from './ink-ribbon-outro';
 import {openingSubjectColors,type OutroAppearance} from './motion-palette';
 
-export type AuthoredOutroPreset='vortex'|'petal-close'|'sweep-away'|'bloom-fade'|'ripple-out'|'starburst'|'wind-drift'|'ink-splash'|'crystal-shatter';
+export type AuthoredOutroPreset='vortex'|'petal-close'|'sweep-away'|'bloom-fade'|'ripple-out'|'starburst'|'wind-drift'|'ink-splash'|'crystal-shatter'|'mirror-flip'|'aurora-fade'|'cascade-drop'|'prism-shatter'|'echo-loop'|'dawn-rise';
 export type OutroBeat={progress:number;collapse:number;sourceScale:number;spread:number;fade:number;phase:'collapse'|'point'|'expand'|'gather'|'fade'};
 const clamp=(n:number)=>Math.max(0,Math.min(1,n));
 const ease=(n:number)=>{const u=clamp(n);return u*u*(3-2*u);};
@@ -255,6 +255,196 @@ function drawCrystalShatterOutro(ctx:CanvasRenderingContext2D,inks:readonly Vari
   ctx.restore();
 }
 
+
+/** 镜面翻转：签名沿水平轴翻转，镜像淡出退场。 */
+function drawMirrorFlipOutro(ctx:CanvasRenderingContext2D,inks:readonly VariantInk[],p:number,g:MotionGeometry,colors:readonly string[]):void{
+  if(!inks.some(ink=>ink.samples.length))return;
+  const cx=g.center.x,cy=g.center.y,radius=Math.max(1,g.radius);
+  const flip=ease(Math.min(1,p/.50));
+  const fade=1-ease(Math.max(0,(p-.60)/.40));
+  if(fade<=.002)return;
+  ctx.save();ctx.globalAlpha=fade;
+  for(const ink of inks){
+    if(!ink.samples.length)continue;
+    const path=new Path2D(),out=[];
+    for(const s of ink.samples){
+      const dy=s.y-cy,mirrorY=cy-dy*flip;
+      const spread=flip*radius*.15*s.u;
+      out.push({x:s.x+spread*Math.sin(s.u*Math.PI*3),y:mirrorY,radius:Math.max(.05,s.radius*(1-flip*.5)),u:s.u});
+    }
+    appendCapsules(path,out);
+    ctx.fillStyle=ink.color;
+    if(ink.glowStrength>0){ctx.save();ctx.shadowColor=ink.glowColor;ctx.shadowBlur=ink.glowRadius;ctx.globalAlpha=fade*ink.glowStrength*.5;ctx.fill(path);ctx.restore();}
+    ctx.globalAlpha=fade;ctx.fill(path);
+  }
+  ctx.restore();
+}
+
+/** 极光消散：极光带横向扫过，墨迹随极光扭曲后消散。 */
+function drawAuroraFadeOutro(ctx:CanvasRenderingContext2D,inks:readonly VariantInk[],p:number,g:MotionGeometry,colors:readonly string[]):void{
+  if(!inks.some(ink=>ink.samples.length))return;
+  const cx=g.center.x,cy=g.center.y,radius=Math.max(1,g.radius);
+  const sweep=ease(Math.min(1,p/.60));
+  const fade=1-ease(Math.max(0,(p-.65)/.35));
+  if(fade<=.002)return;
+  ctx.save();ctx.globalAlpha=fade;
+  for(const ink of inks){
+    if(!ink.samples.length)continue;
+    const path=new Path2D(),out=[];
+    for(const s of ink.samples){
+      const wave=Math.sin((s.x-cx)/radius*Math.PI*3+sweep*Math.PI*4)*radius*.12*sweep;
+      const drift=(s.x-cx)/radius*sweep*radius*.2;
+      out.push({x:s.x+drift,y:s.y+wave,radius:Math.max(.04,s.radius*(1-sweep*.6)),u:s.u});
+    }
+    appendCapsules(path,out);
+    ctx.fillStyle=ink.color;
+    if(ink.glowStrength>0){ctx.save();ctx.shadowColor=ink.glowColor;ctx.shadowBlur=ink.glowRadius;ctx.globalAlpha=fade*ink.glowStrength*.5;ctx.fill(path);ctx.restore();}
+    ctx.globalAlpha=fade;ctx.fill(path);
+  }
+  if(sweep>.1){
+    ctx.save();ctx.globalCompositeOperation='lighter';
+    for(let band=0;band<3;band++){
+      const grad=ctx.createLinearGradient(cx-radius,cy,cx+radius,cy);
+      const col=colors[band%colors.length]??'#ffffff';
+      grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(.5,hexToRgba(col,fade*.18*(1-band*.2)));grad.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=grad;ctx.fillRect(cx-radius,cy-radius*.3,radius*2,radius*.6);
+    }
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+/** 瀑布坠落：墨迹化作水滴向下坠落，逐渐消散。 */
+function drawCascadeDropOutro(ctx:CanvasRenderingContext2D,inks:readonly VariantInk[],p:number,g:MotionGeometry,colors:readonly string[]):void{
+  if(!inks.some(ink=>ink.samples.length))return;
+  const cx=g.center.x,cy=g.center.y,radius=Math.max(1,g.radius);
+  const drop=ease(Math.min(1,p/.65));
+  const fade=1-ease(Math.max(0,(p-.70)/.30));
+  if(fade<=.002)return;
+  ctx.save();ctx.globalAlpha=fade;
+  for(const ink of inks){
+    if(!ink.samples.length)continue;
+    const path=new Path2D(),out=[];
+    for(const s of ink.samples){
+      const fall=drop*radius*2.0*(.3+.7*s.u);
+      const wobble=Math.sin(s.u*Math.PI*5+drop*Math.PI*3)*radius*.06;
+      out.push({x:s.x+wobble,y:s.y+fall,radius:Math.max(.03,s.radius*(1-drop*.75)),u:s.u});
+    }
+    appendCapsules(path,out);
+    ctx.fillStyle=ink.color;
+    if(ink.glowStrength>0){ctx.save();ctx.shadowColor=ink.glowColor;ctx.shadowBlur=ink.glowRadius;ctx.globalAlpha=fade*ink.glowStrength*.5;ctx.fill(path);ctx.restore();}
+    ctx.globalAlpha=fade;ctx.fill(path);
+  }
+  ctx.restore();
+}
+
+/** 棱镜碎裂：墨迹凝结成棱镜后碎裂成彩色碎片飞散。 */
+function drawPrismShatterOutro(ctx:CanvasRenderingContext2D,inks:readonly VariantInk[],p:number,g:MotionGeometry,colors:readonly string[]):void{
+  if(!inks.some(ink=>ink.samples.length))return;
+  const cx=g.center.x,cy=g.center.y,radius=Math.max(1,g.radius);
+  const condense=ease(Math.min(1,p/.20));
+  const shatter=clamp((p-.20)/.50);
+  const fade=1-ease(Math.max(0,(p-.75)/.25));
+  if(fade<=.002)return;
+  ctx.save();ctx.globalAlpha=fade;
+  for(const ink of inks){
+    if(!ink.samples.length)continue;
+    const path=new Path2D(),out=[];
+    for(const s of ink.samples){
+      const dx=s.x-cx,dy=s.y-cy,len=Math.hypot(dx,dy)||1;
+      const pull=1-condense*.25;
+      const angle=Math.atan2(dy,dx)+shatter*Math.PI*2;
+      const push=shatter*radius*(.5+1.5*s.u);
+      out.push({x:cx+dx*pull+Math.cos(angle)*push,y:cy+dy*pull+Math.sin(angle)*push,radius:Math.max(.03,s.radius*(1-shatter*.8)),u:s.u});
+    }
+    appendCapsules(path,out);
+    ctx.fillStyle=ink.color;
+    if(ink.glowStrength>0){ctx.save();ctx.shadowColor=ink.glowColor;ctx.shadowBlur=ink.glowRadius;ctx.globalAlpha=fade*ink.glowStrength*.5;ctx.fill(path);ctx.restore();}
+    ctx.globalAlpha=fade;ctx.fill(path);
+  }
+  if(shatter>.1){
+    ctx.save();ctx.globalCompositeOperation='lighter';
+    for(let i=0;i<6;i++){
+      const a=i/6*Math.PI*2+shatter*Math.PI;
+      const r=radius*shatter*1.2;
+      ctx.fillStyle=hexToRgba(colors[i%colors.length]??'#ffffff',fade*.12);
+      ctx.beginPath();ctx.arc(cx+Math.cos(a)*r,cy+Math.sin(a)*r,radius*.15,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+/** 回声环绕：墨迹化作回声波纹向外扩散，层层淡出。 */
+function drawEchoLoopOutro(ctx:CanvasRenderingContext2D,inks:readonly VariantInk[],p:number,g:MotionGeometry,colors:readonly string[]):void{
+  if(!inks.some(ink=>ink.samples.length))return;
+  const cx=g.center.x,cy=g.center.y,radius=Math.max(1,g.radius);
+  const ripple=ease(Math.min(1,p/.70));
+  const fade=1-ease(Math.max(0,(p-.75)/.25));
+  if(fade<=.002)return;
+  ctx.save();ctx.globalAlpha=fade;
+  for(const ink of inks){
+    if(!ink.samples.length)continue;
+    const path=new Path2D(),out=[];
+    for(const s of ink.samples){
+      const dx=s.x-cx,dy=s.y-cy,len=Math.hypot(dx,dy)||1;
+      const ring=Math.sin(len/radius*Math.PI*2-ripple*Math.PI*4)*radius*.15*ripple;
+      const push=ripple*radius*.3*(1-s.u);
+      out.push({x:cx+dx+dx/len*(push+ring),y:cy+dy+dy/len*(push+ring),radius:Math.max(.04,s.radius*(1-ripple*.6)),u:s.u});
+    }
+    appendCapsules(path,out);
+    ctx.fillStyle=ink.color;
+    if(ink.glowStrength>0){ctx.save();ctx.shadowColor=ink.glowColor;ctx.shadowBlur=ink.glowRadius;ctx.globalAlpha=fade*ink.glowStrength*.5;ctx.fill(path);ctx.restore();}
+    ctx.globalAlpha=fade;ctx.fill(path);
+  }
+  // 回声环
+  if(ripple>.1){
+    ctx.save();ctx.globalCompositeOperation='lighter';
+    for(let ring=0;ring<3;ring++){
+      const r=radius*ripple*(.4+ring*.3);
+      ctx.strokeStyle=hexToRgba(colors[0]??'#ffffff',fade*.15*(1-ring*.2));
+      ctx.lineWidth=radius*.03;
+      ctx.beginPath();ctx.arc(cx,cy,Math.max(1,r),0,Math.PI*2);ctx.stroke();
+    }
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+/** 晨光升腾：墨迹向上飘升成光点，如晨光中消散。 */
+function drawDawnRiseOutro(ctx:CanvasRenderingContext2D,inks:readonly VariantInk[],p:number,g:MotionGeometry,colors:readonly string[]):void{
+  if(!inks.some(ink=>ink.samples.length))return;
+  const cx=g.center.x,cy=g.center.y,radius=Math.max(1,g.radius);
+  const rise=ease(Math.min(1,p/.65));
+  const fade=1-ease(Math.max(0,(p-.70)/.30));
+  if(fade<=.002)return;
+  ctx.save();ctx.globalAlpha=fade;
+  for(const ink of inks){
+    if(!ink.samples.length)continue;
+    const path=new Path2D(),out=[];
+    for(const s of ink.samples){
+      const lift=rise*radius*2.2*(.2+.8*s.u);
+      const drift=Math.sin(s.u*Math.PI*4+rise*Math.PI*3)*radius*.1;
+      const shrink=1-rise*.7;
+      out.push({x:s.x+drift,y:s.y-lift,radius:Math.max(.03,s.radius*shrink),u:s.u});
+    }
+    appendCapsules(path,out);
+    ctx.fillStyle=ink.color;
+    if(ink.glowStrength>0){ctx.save();ctx.shadowColor=ink.glowColor;ctx.shadowBlur=ink.glowRadius;ctx.globalAlpha=fade*ink.glowStrength*.5;ctx.fill(path);ctx.restore();}
+    ctx.globalAlpha=fade;ctx.fill(path);
+  }
+  // 晨光渐变
+  if(rise>.1){
+    ctx.save();ctx.globalCompositeOperation='lighter';
+    const grad=ctx.createLinearGradient(cx,cy-radius*2,cx,cy+radius);
+    grad.addColorStop(0,hexToRgba(colors[0]??'#ffffff',fade*.12*rise));
+    grad.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=grad;ctx.fillRect(cx-radius,cy-radius*2,radius*2,radius*3);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
 /** The retained authored ending keeps its existing seven flights and entry artwork. */
 export function drawAuthoredOutroInk(ctx:CanvasRenderingContext2D,inks:readonly VariantInk[],id:AuthoredOutroPreset,progress:number,geometry:MotionGeometry,colors:readonly string[]=openingSubjectColors('classic'),appearance?:OutroAppearance):void{
   const p=clamp(Number.isFinite(progress)?progress:0);if(p>=1)return;
@@ -267,4 +457,10 @@ export function drawAuthoredOutroInk(ctx:CanvasRenderingContext2D,inks:readonly 
   if(id==='wind-drift'){drawWindDriftOutro(ctx,inks,p,geometry,colors);return;}
   if(id==='ink-splash'){drawInkSplashOutro(ctx,inks,p,geometry,colors);return;}
   if(id==='crystal-shatter'){drawCrystalShatterOutro(ctx,inks,p,geometry,colors);return;}
+  if(id==='mirror-flip'){drawMirrorFlipOutro(ctx,inks,p,geometry,colors);return;}
+  if(id==='aurora-fade'){drawAuroraFadeOutro(ctx,inks,p,geometry,colors);return;}
+  if(id==='cascade-drop'){drawCascadeDropOutro(ctx,inks,p,geometry,colors);return;}
+  if(id==='prism-shatter'){drawPrismShatterOutro(ctx,inks,p,geometry,colors);return;}
+  if(id==='echo-loop'){drawEchoLoopOutro(ctx,inks,p,geometry,colors);return;}
+  if(id==='dawn-rise'){drawDawnRiseOutro(ctx,inks,p,geometry,colors);return;}
 }

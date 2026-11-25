@@ -15,8 +15,8 @@ const mix=(a:string,b:string,p:number)=>'#'+[1,3,5].map(i=>Math.round(lerp(parse
 type Pose={id:OrnatePreset;frame:OrnateFrame;center:Point;size:number;alpha:number;rotation:number;seed:number};
 export type OrnatePen={point:Point;color:string;index:number;trail:Point[];firstStroke:boolean};
 
-function motif(context:CanvasRenderingContext2D,id:OrnatePreset,frame:OrnateFrame):void{
- if(id==='orbit'||id==='bloom'||id==='moon'||id==='stellar')drawCelestialMotif(context,id as CelestialPreset,frame);
+function motif(context:CanvasRenderingContext2D,id:string,frame:OrnateFrame):void{
+ if(id==='orbit'||id==='bloom'||id==='moon'||id==='stellar'||id==='aurora'||id==='rainbow'||id==='crystal-rain'||id==='nebula')drawCelestialMotif(context,id as CelestialPreset,frame);
  else if(id==='unicorn'||id==='wings'||id==='fan'||id==='dragon')drawMythicMotif(context,id as MythicPreset,frame);
  else drawBotanicalMotif(context,id as BotanicalPreset,frame);
 }

@@ -28,6 +28,7 @@ export const personSchema = z.object({
   ink:z.object({color,gradient:gradientSchema.optional()}),
   glow:z.object({enabled:z.boolean(),color,strength:finite(0,1),radius:finite(0,48)}),
   decoration:z.object({id:z.enum(STORED_DECORATION_IDS),scale:finite(.3,3),offsetX:finite(-.45,.45),offsetY:finite(-.45,.45),rotation:finite(-45,45).default(0),action:z.enum(['wink','none']),earFold:z.boolean(),playful:z.boolean().default(true)}),
+  trajectory:z.object({enabled:z.boolean().default(false),mode:z.enum(['follow','circular','zigzag','spiral','wave','random']).default('follow'),intensity:finite(0,1).default(.5),radius:finite(0,300).default(60),speed:finite(.1,3).default(1)}).default({enabled:false,mode:'follow',intensity:.5,radius:60,speed:1}),
   underline:z.object({enabled:z.boolean(),lift:z.boolean()}),
   comet:z.object({enabled:z.boolean(),color,size:finite(.5,3)}),
 }).strict();
@@ -87,6 +88,8 @@ function simplifyDesign(config:WebConfig):WebConfig{
     person.decoration.action='wink';
     person.decoration.earFold=true;
     person.decoration.playful=true;
+    // Migrate legacy global decorationTrajectory toggle to per-person trajectory config
+    if(config.animation.decorationTrajectory)person.trajectory.enabled=true;
   }
   return config;
 }

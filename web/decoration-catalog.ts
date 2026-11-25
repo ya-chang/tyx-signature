@@ -9,6 +9,7 @@ export const ACTIVE_DECORATION_IDS=[
   'pet-raccoon','pet-chick','pet-koala','pet-seal','pet-lion','pet-hedgehog',
   'zodiac-aries','zodiac-taurus','zodiac-gemini','zodiac-cancer','zodiac-leo','zodiac-virgo',
   'zodiac-libra','zodiac-scorpio','zodiac-sagittarius','zodiac-capricorn','zodiac-aquarius','zodiac-pisces',
+  'sparkle','clover','rainbow','snowflake','leaf','drop','gem','flame','comet','crown','ribbon','music',
 ] as const;
 
 // Read old designs without reintroducing retired ornaments in the picker.
@@ -19,12 +20,13 @@ export const STORED_DECORATION_IDS=[
   'accent-flower','accent-music','accent-envelope','accent-candy',
 ] as const;
 export type DecorationId=typeof ACTIVE_DECORATION_IDS[number];
-export type DecorationCategory='pets'|'paws'|'expressions'|'zodiac';
+export type DecorationCategory='pets'|'paws'|'expressions'|'zodiac'|'elements';
 export const decorationCategories:{id:DecorationCategory;label:string}[]=[
   {id:'pets',label:'萌宠'},
   {id:'paws',label:'爪爪'},
   {id:'expressions',label:'表情'},
   {id:'zodiac',label:'星座'},
+  {id:'elements',label:'元素'},
 ];
 export const decorationCatalog:{id:Exclude<DecorationId,'none'>;label:string;category:DecorationCategory}[]=[
   {id:'cat-ears',label:'猫耳',category:'pets'},
@@ -77,6 +79,18 @@ export const decorationCatalog:{id:Exclude<DecorationId,'none'>;label:string;cat
   {id:'zodiac-capricorn',label:'摩羯座',category:'zodiac'},
   {id:'zodiac-aquarius',label:'水瓶座',category:'zodiac'},
   {id:'zodiac-pisces',label:'双鱼座',category:'zodiac'},
+  {id:'sparkle',label:'闪光',category:'elements'},
+  {id:'clover',label:'四叶草',category:'elements'},
+  {id:'rainbow',label:'彩虹',category:'elements'},
+  {id:'snowflake',label:'雪花',category:'elements'},
+  {id:'leaf',label:'叶片',category:'elements'},
+  {id:'drop',label:'水滴',category:'elements'},
+  {id:'gem',label:'宝石',category:'elements'},
+  {id:'flame',label:'火焰',category:'elements'},
+  {id:'comet',label:'彗星',category:'elements'},
+  {id:'crown',label:'皇冠',category:'elements'},
+  {id:'ribbon',label:'丝带',category:'elements'},
+  {id:'music',label:'音符',category:'elements'},
 ];
 const activeIds=new Set<string>(ACTIVE_DECORATION_IDS);
 export function isDecorationId(id:string):id is DecorationId{return activeIds.has(id);}
