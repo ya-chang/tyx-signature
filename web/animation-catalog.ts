@@ -14,6 +14,12 @@ export const outroPresets = [
   {id:'vortex',label:'旋涡收拢',description:'沿用开场配色，墨带错峰转弯、回穿交叠，最后收束退场。'},
   {id:'petal-close',label:'光瓣收拢',description:'墨迹先向心收拢，再散成光瓣向外飘散退场。'},
   {id:'sweep-away',label:'流光扫散',description:'一道流光斜向扫过，墨迹化作光点随光带飘散。'},
+  {id:'bloom-fade',label:'绽放消散',description:'墨迹从中心绽放成多层花瓣，逐层透明消散退场。'},
+  {id:'ripple-out',label:'涟漪扩散',description:'墨迹化作同心涟漪向外扩散，逐渐淡出消失。'},
+  {id:'starburst',label:'星芒迸发',description:'墨迹从中心迸发出星芒射线，光芒散尽后退场。'},
+  {id:'wind-drift',label:'风中飘散',description:'墨迹被风吹散成细碎光点，随风飘向远方退场。'},
+  {id:'ink-splash',label:'墨溅收束',description:'墨迹向四周溅开成墨点，随后聚拢收束消失。'},
+  {id:'crystal-shatter',label:'晶碎退场',description:'墨迹凝结成晶体后碎裂成光屑，缓缓飘落退场。'},
   {id:'none',label:'无动画',description:'写完后保留签名。'},
 ] as const;
 

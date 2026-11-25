@@ -17,7 +17,7 @@ test('bad files, unsupported versions, nonfinite values and invalid timing are r
   const c=defaultWebConfig();assert.throws(()=>validateConfig({...c,version:1}));
   c.people[0].font.penWidth=Infinity;assert.throws(()=>validateConfig(c));
   const short=defaultWebConfig();short.timing.duration=3;short.timing.hold=2;assert.throws(()=>validateConfig(short),/至少 2 秒/);
-  const invalidName=defaultWebConfig();invalidName.people[0].name='太阳';assert.throws(()=>validateConfig(invalidName),/英文字母/);
+  const invalidName=defaultWebConfig();invalidName.people[0].name='123';assert.throws(()=>validateConfig(invalidName),/英文字母或汉字/);
 });
 test('corrupt or inaccessible storage recovers with an explicit warning',()=>{
   assert.equal(loadConfig({getItem:()=>'{'}).config.version,2);
@@ -44,7 +44,7 @@ test('all output aspects are even 1080p frames and the brush adapter selects ori
 
 test('defaults clone the default design and never share nested state',()=>{
   const first=defaultWebConfig();
-  const expected={...structuredClone(defaultDesign),canvas:{...defaultDesign.canvas,transparent:false}};
+  const expected={...structuredClone(defaultDesign),animation:{...defaultDesign.animation,decorationTrajectory:false},canvas:{...defaultDesign.canvas,transparent:false}};
   assert.deepEqual(first,expected);
   assert.deepEqual(defaultPerson(1),defaultDesign.people[1]);
   first.people[0].name='Changed';first.people[0].position.x=.2;first.people[0].decoration.scale=.5;first.audio.volume=0;
@@ -54,7 +54,7 @@ test('defaults clone the default design and never share nested state',()=>{
 });
 
 test('saved designs and imported files without transparency default to an opaque canvas without changing their content',()=>{
-  const text=JSON.stringify(defaultDesign),expected={...structuredClone(defaultDesign),canvas:{...defaultDesign.canvas,transparent:false}};
+  const text=JSON.stringify(defaultDesign),expected={...structuredClone(defaultDesign),animation:{...defaultDesign.animation,decorationTrajectory:false},canvas:{...defaultDesign.canvas,transparent:false}};
   assert.deepEqual(parseConfigFile(text),expected);
   for(const key of [STORAGE_KEY,'tyx-signature.website.v6']){
     const loaded=loadConfig({getItem:requested=>requested===key?text:null});
@@ -97,9 +97,9 @@ test('legacy storage preserves authored names, duration, animation choice, color
 test('older animation switches migrate without re-enabling effects or replacing the authored design',()=>{
   for(const enabled of [true,false]){
     const original=defaultWebConfig();original.people[0].name='LiXin';original.canvas.background='#7451a3';original.timing.duration=7;
-    const legacy={...original,animation:{introOutroEnabled:enabled}};
+    const legacy={...original,animation:{introOutroEnabled:enabled,decorationTrajectory:false}};
     const imported=parseConfigFile(JSON.stringify(legacy));
-    assert.deepEqual(imported,{...original,animation:{introOutroEnabled:enabled,intro:'classic',outro:'classic'}});
+    assert.deepEqual(imported,{...original,animation:{introOutroEnabled:enabled,intro:'classic',outro:'classic',decorationTrajectory:false}});
     assert.deepEqual(resolveMotionSelection(imported.animation),enabled?{intro:'classic',outro:'classic'}:{intro:'none',outro:'none'});
     const loaded=loadConfig({getItem:key=>key===STORAGE_KEY?JSON.stringify(legacy):null});
     assert.equal(loaded.warning,undefined);assert.deepEqual(loaded.config,imported);
@@ -108,7 +108,7 @@ test('older animation switches migrate without re-enabling effects or replacing 
 
 test('independent opening and ending choices round trip through files and browser storage',()=>{
   for(const intro of introPresets)for(const outro of outroPresets){
-    const config=defaultWebConfig();config.animation={introOutroEnabled:intro.id!=='none'||outro.id!=='none',intro:intro.id,outro:outro.id};
+    const config=defaultWebConfig();config.animation={introOutroEnabled:intro.id!=='none'||outro.id!=='none',intro:intro.id,outro:outro.id,decorationTrajectory:false};
     config.people[0].position.x=.11;config.people[1].ink.color='#ee88bb';
     let saved='';saveConfig({setItem:(_key,value)=>{saved=value;}},config);
     assert.deepEqual(parseConfigFile(saved),config,`${intro.id}/${outro.id}`);

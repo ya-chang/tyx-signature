@@ -238,7 +238,14 @@ export function Preview({scene,selected,config,audioUrl,pauseToken,completeToken
     if(!previewRequest||previousPreviewRequest.current===previewRequest.token)return;
     previousPreviewRequest.current=previewRequest.token;
     if(latest.current.disabled||document.hidden||document.querySelector('dialog[open]'))return;
-    const range=previewRange(currentScene.current,previewRequest.phase);
+    // Wait for the lazy continuous-motion engine to finish loading before
+    // starting an intro/outro preview; otherwise the animation draws nothing.
+    const scene=currentScene.current;
+    if(scene.continuousRecipe&&!scene.continuous){
+      previousPreviewRequest.current=undefined;
+      return;
+    }
+    const range=previewRange(scene,previewRequest.phase);
     if(range.end-range.start<=1e-6){showComplete();return;}
     startRange(previewRequest.phase);
   },[previewRequest,startRange,showComplete]);

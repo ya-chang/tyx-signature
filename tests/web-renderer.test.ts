@@ -104,8 +104,17 @@ test('unit-scale names fit each artboard; deliberate enlargement warns instead o
  const c=fixture(),base=prepareScene(c);c.people[0].position.scale=1.5;c.people[0].position.x=.45;const next=prepareScene(c);assert.equal(next.people[0].baseScale,base.people[0].baseScale);close(next.people[0].scale/base.people[0].scale,1.5);assert.ok(next.warnings.length>0);
 });
 
-test('retired family and scheme values keep original input without adding alternative ornament strokes',()=>{
- for(const name of ['A','TYX','Liuxin',"O'Neil-Smith"]){const c=fixture();c.people[0].name=name;const source=asBrushConfig(c.people[0],c),authored=buildWebBrush(source,'classic');for(const scheme of ['classic','loop','sweep'] as const)for(const family of ['tyx-brush','tyx-soft'] as const){const brush=buildWebBrush(source,scheme,family);assert.deepEqual(brush,authored);assert.ok(!brush.strokes.some(stroke=>stroke.id.startsWith('scheme-')));}assert.equal(prepareScene(c).config.people[0].name,name);}
+test('retired scheme values keep original input without adding alternative ornament strokes',()=>{
+ for(const name of ['A','TYX','Liuxin',"O'Neil-Smith"]){const c=fixture();c.people[0].name=name;const source=asBrushConfig(c.people[0],c),authored=buildWebBrush(source,'classic');for(const scheme of ['classic','loop','sweep'] as const){const brush=buildWebBrush(source,scheme);assert.deepEqual(brush,authored);assert.ok(!brush.strokes.some(stroke=>stroke.id.startsWith('scheme-')));}assert.equal(prepareScene(c).config.people[0].name,name);}
+});
+
+test('each font family produces distinct stroke characteristics',()=>{
+ const c=fixture();c.people[0].name='Liuxin';const source=asBrushConfig(c.people[0],c);
+ const brushes=['tyx-brush','tyx-soft','tyx-bold','tyx-elegant','tyx-modern'].map(family=>buildWebBrush(source,'classic',family as 'tyx-brush'));
+ const widths=brushes.map(b=>b.strokes[0].width);
+ assert.ok(widths.some((w,i)=>w!==widths[0]),'font families produce different stroke widths');
+ const durations=brushes.map(b=>b.duration);
+ assert.ok(durations.some((d,i)=>Math.abs(d-durations[0])>1e-6),'font families produce different timing');
 });
 
 test('the pen samples actual nonlinear writing and supports reverse seeking',()=>{
@@ -205,7 +214,7 @@ test('prepared scenes isolate exports from later edits',()=>{const c=fixture(),c
 
 test('opening and ending selections reserve only their own time and retain the authored layout',()=>{
  for(const duration of [3,5,15])for(const intro of introPresets)for(const outro of outroPresets){
-  const c=fixture();c.timing.duration=duration;c.animation={introOutroEnabled:true,intro:intro.id,outro:outro.id};
+  const c=fixture();c.timing.duration=duration;c.animation={introOutroEnabled:true,intro:intro.id,outro:outro.id,decorationTrajectory:false};
   const scene=prepareScene(c),plan=scene.people[0].plan;
   const expectedLead=intro.id==='none'?0:intro.id==='classic'?.8:duration===3&&outro.id!=='none'?.55:intro.id==='comet'?1.2:1.35;
   close(plan.writing.start,expectedLead);

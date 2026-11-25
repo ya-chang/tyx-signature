@@ -1,6 +1,7 @@
 import {buildBrush,brushProgress,parseStroke,type BrushStroke} from '../src/brush';
 import {pointAt,pointBounds,sampleCubic,type Box,type Curve,type Point} from '../src/geometry';
 import {initials,middle,endings,metrics,type PenGlyph} from '../assets/fonts/tyx-brush/positional';
+import {chineseGlyphs,isChineseChar} from '../assets/fonts/tyx-brush/chinese';
 import type {SignatureConfig} from '../src/config';
 import type {Scheme} from './model';
 
@@ -20,12 +21,25 @@ function transformCurve(curve:Curve,transform:(p:Curve['points'][number])=>Point
  return {points,length};
 }
 
-/** Build TYX centerlines with positional letterforms and case-preserving advances. */
+/** Build TYX centerlines with positional letterforms and case-preserving advances.
+ * Chinese characters use their standard stroke order from chineseGlyphs. */
 function originalLetterStrokes(config:SignatureConfig):{strokes:BrushStroke[];guide:PreparedBrush['guide']}{
- const characters=[...config.name],first=characters.findIndex(ch=>/[A-Za-z]/.test(ch)),last=characters.map(ch=>/[A-Za-z]/.test(ch)).lastIndexOf(true),factor=config.font.size/320;
+ const characters=[...config.name],first=characters.findIndex(ch=>/[A-Za-z\u4e00-\u9fff]/.test(ch)),last=characters.map(ch=>/[A-Za-z\u4e00-\u9fff]/.test(ch)).lastIndexOf(true),factor=config.font.size/320;
  const strokes:BrushStroke[]=[],dots:BrushStroke[]=[];let cursor=0;
  characters.forEach((char,index)=>{
   if(char===' '){cursor+=62*factor;return;}
+  if(isChineseChar(char)){
+   const glyph=chineseGlyphs[char];
+   const isLead=index===first,isTerminal=index===last;
+   const scale=isLead?config.font.initialScale:1;
+   (glyph?glyph.strokes:['M 10 -50 L 90 -50']).forEach((source,strokeIndex)=>{
+    const curve=transformCurve(parseStroke(source),p=>({x:cursor+p.x*factor*scale+(isLead?config.font.initialOffsetX:0),y:p.y*factor*scale+(isLead?config.font.initialOffsetY:0)}));
+    const stroke:BrushStroke={id:`brush-${index}-${strokeIndex}`,char,index:strokeIndex,curve,start:0,duration:Math.max(.075,Math.pow(curve.length,.76)/275),width:config.font.size*(isTerminal?.034:.040)*config.font.penWidth*(isLead?Math.sqrt(config.font.initialScale):1),position:isTerminal?'terminal':'medial',dot:false};
+    strokes.push(stroke);
+   });
+   cursor+=(glyph?glyph.advance:100)*factor*scale;
+   return;
+  }
   const cap=initials[char],base=middle[char],isLead=index===first;
   const position:BrushStroke['position']=cap&&isLead?'initial':base&&index===last?'terminal':cap||base?'medial':'punctuation';
   const glyph:PenGlyph=cap??base??(char==="'"?{advance:38,paths:['M 20 -157 C 28 -167 30 -181 29 -186']}:{advance:65,paths:['M 0 -57 C 19 -60 44 -60 65 -57']});
@@ -55,8 +69,19 @@ function originalLetterStrokes(config:SignatureConfig):{strokes:BrushStroke[];gu
  return {strokes,guide:{baseline:0,xHeight:metrics.xHeight*factor,hasDescenders:strokes.some(s=>/[fgjpqxyz]/.test(s.char)),bodyStart:0,bodyEnd:cursor}};
 }
 
+/** Font family stroke characteristics: width multiplier, pressure curve, and timing factor. */
+const fontFamilyProfiles:Record<string,{widthMul:number;pressureMul:number;timingMul:number}>={
+ 'tyx-brush':{widthMul:1,pressureMul:1,timingMul:1},
+ 'tyx-soft':{widthMul:.82,pressureMul:.7,timingMul:1.15},
+ 'tyx-bold':{widthMul:1.35,pressureMul:1.25,timingMul:.85},
+ 'tyx-elegant':{widthMul:.9,pressureMul:.95,timingMul:1.2},
+ 'tyx-modern':{widthMul:.95,pressureMul:.85,timingMul:.95},
+};
+const clamp01=(n:number)=>Math.max(0,Math.min(1,n));
+
 /** Prepare timed TYX strokes with deterministic pressure samples. */
-export function buildWebBrush(config:SignatureConfig,_scheme:Scheme,_family:'tyx-brush'|'tyx-soft'='tyx-brush'):PreparedBrush{
+export function buildWebBrush(config:SignatureConfig,_scheme:Scheme,family:'tyx-brush'|'tyx-soft'|'tyx-bold'|'tyx-elegant'|'tyx-modern'='tyx-brush'):PreparedBrush{
+ const profile=fontFamilyProfiles[family]??fontFamilyProfiles['tyx-brush'];
  const handwriting={...config,font:{...config.font,initialScale:1+(config.font.initialScale-1)*.45}};
  const original=originalLetterStrokes(handwriting),strokes=original.strokes,size=config.font.size;
  let clock=0;
@@ -64,11 +89,11 @@ export function buildWebBrush(config:SignatureConfig,_scheme:Scheme,_family:'tyx
   // Prepare timing objects without mutating the source strokes.
   const previous=strokes[index-1],letterChanged=previous&&previous.id.split('-')[1]!==source.id.split('-')[1];
   const previousEnd=previous?.curve.points.at(-1),start=source.curve.points[0],lift=previousEnd?Math.hypot(start.x-previousEnd.x,start.y-previousEnd.y):0;
-  if(index>0)clock+=source.dot?.065:lift<3?.009:letterChanged?.065:.035;
-  const duration=source.dot?.10:Math.max(.075,Math.pow(source.curve.length,.76)/275)*(1+.055*Math.sin(index*1.7));
-  const stroke={...source,start:clock,duration};clock+=stroke.duration;
+  if(index>0)clock+=source.dot?.065:lift<3?.009:letterChanged?.065*.8:.035*.8;
+  const duration=source.dot?.10:Math.max(.075,Math.pow(source.curve.length,.76)/275)*(1+.055*Math.sin(index*1.7))*profile.timingMul;
+  const stroke={...source,start:clock,duration,width:source.width*profile.widthMul};clock+=stroke.duration;
   const count=Math.max(2,Math.ceil(stroke.curve.length/Math.max(1.3,size*.007)));
-  const samples=Array.from({length:count+1},(_,i)=>{const u=i/count;return {...pointAt(stroke.curve,u),u,radius:inkRadius(stroke,u,config.font.pressure)};});
+  const samples=Array.from({length:count+1},(_,i)=>{const u=i/count;return {...pointAt(stroke.curve,u),u,radius:inkRadius(stroke,u,clamp01(config.font.pressure*profile.pressureMul))};});
   return {...stroke,samples};
  });
  const points=prepared.flatMap(s=>s.samples.flatMap(p=>[{x:p.x-p.radius,y:p.y-p.radius},{x:p.x+p.radius,y:p.y+p.radius}]));

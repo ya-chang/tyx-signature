@@ -1,6 +1,6 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
-import {canvasSize,clamp,defaultWebConfig,loadConfig,parseConfigFile,saveConfig,validateConfig,type PersonConfig,type WebConfig} from './model';
+import {canvasSize,clamp,defaultWebConfig,fontFamilies,loadConfig,parseConfigFile,saveConfig,validateConfig,type PersonConfig,type WebConfig} from './model';
 import {prepareScene,renderScene,ensureContinuous,type PreparedScene} from './renderer';
 import {Preview,type AnimationPreviewRequest} from './Preview';
 import {Details,Icon,Range,Toggle,UtilityMenu} from './ui';
@@ -36,7 +36,7 @@ function downloadText(text:string,name:string){
 }
 function directFontConfig(config:WebConfig):WebConfig{
   const next=structuredClone(config);
-  next.people.forEach(person=>{person.scheme='classic';person.font.family='tyx-brush';person.font.size=240;});
+  next.people.forEach(person=>{person.scheme='classic';person.font.size=240;});
   return next;
 }
 function App(){
@@ -118,7 +118,7 @@ function App(){
   };
   const update=(fn:(next:WebConfig)=>void)=>setConfig(current=>{const next=structuredClone(current);fn(next);return next;});
   const changePerson=(fn:(next:PersonConfig)=>void)=>update(next=>fn(next.people[selected]));
-  const changeMotion=(patch:{intro?:IntroPreset;outro?:OutroPreset})=>update(next=>{
+  const changeMotion=(patch:{intro?:IntroPreset;outro?:OutroPreset;decorationTrajectory?:boolean})=>update(next=>{
     const selection={...resolveMotionSelection(next.animation),...patch};
     next.animation={...next.animation,...selection,introOutroEnabled:selection.intro!=='none'||selection.outro!=='none'};
   });
@@ -290,6 +290,9 @@ function App(){
       </UtilityMenu><ThemeSelector/></>}>
         <fieldset className="inspector-fields" disabled={busy} aria-label={tab==='signature'?'签名设置':tab==='decoration'?'装饰设置':tab==='animation'?'动画设置':'画面设置'}>
           {tab==='signature'&&<div className="inspector-cards">
+              <div className="font-family-picker" role="group" aria-label="签名字体">
+                {fontFamilies.map(family=><button type="button" key={family.id} className={['font-family-choice','font-family-'+family.id,person.font.family===family.id?'selected':''].join(' ')} aria-pressed={person.font.family===family.id} onClick={()=>changePerson(next=>{next.font.family=family.id as PersonConfig['font']['family'];})}>{family.name}</button>)}
+              </div>
             <section className="inspector-group signature-content" data-tour="signature-content" aria-labelledby="signature-content-title">
               <h2 className="section-heading" id="signature-content-title">签名内容</h2>
               <div className="mode-switch" role="group" aria-label="签名模式">
@@ -359,6 +362,7 @@ function App(){
             </section>
           </div>}
           {tab==='animation'&&<div className="inspector-cards">
+              <Toggle title="装饰进书写轨迹" checked={config.animation.decorationTrajectory} onChange={value=>changeMotion({decorationTrajectory:value})}/>
             <section className="inspector-group">
               <h2 className="section-heading">动画设置</h2>
               <Range title="动画时长" value={config.timing.duration} min={3} max={15} step={.5} suffix="秒" onChange={value=>update(next=>{next.timing.duration=value;next.timing.hold=Math.min(next.timing.hold,value-2);})}/><Range title="书写占比" value={config.timing.writingRatio} min={.35} max={.8} step={.01} displayDecimals={2} onChange={value=>update(next=>{next.timing.writingRatio=value;})}/>

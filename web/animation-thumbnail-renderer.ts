@@ -24,7 +24,7 @@ function thumbnailConfig(source:WebConfig,kind:AnimationThumbnailKind,preset:Int
   config.timing={...config.timing,duration:5,hold:.6};
   config.people[0].position={x:0,y:0,scale:1,rotation:0};
   config.people[0].decoration={...config.people[0].decoration,id:'none',offsetX:0,offsetY:0};
-  config.animation={introOutroEnabled:true,intro:kind==='intro'?preset as IntroPreset:preset==='vortex'?selection.intro:'classic',outro:kind==='outro'?preset as OutroPreset:'none'};
+  config.animation={introOutroEnabled:true,intro:kind==='intro'?preset as IntroPreset:preset==='vortex'?selection.intro:'classic',outro:kind==='outro'?preset as OutroPreset:'none',decorationTrajectory:false};
   return config;
 }
 

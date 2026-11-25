@@ -7,7 +7,7 @@ import {previewPhases,previewRange} from '../web/preview-timeline';
 test('signature preview includes ornament drawing and reaction before the ending',()=>{
   const config=defaultWebConfig();
   config.mode='couple';config.timing.duration=8;
-  config.animation={introOutroEnabled:true,intro:'comet',outro:'vortex'};
+  config.animation={introOutroEnabled:true,intro:'comet',outro:'vortex',decorationTrajectory:false};
   config.people[0].decoration.id='cat-ears';
   const scene=prepareScene(config),[intro,writing,outro]=previewPhases(scene);
   assert.equal(intro.start,0);
@@ -23,7 +23,7 @@ test('signature preview includes ornament drawing and reaction before the ending
 
 test('disabled opening and ending leave the complete duration available for signature playback',()=>{
   const config=defaultWebConfig();
-  config.animation={introOutroEnabled:true,intro:'none',outro:'none'};
+  config.animation={introOutroEnabled:true,intro:'none',outro:'none',decorationTrajectory:false};
   config.timing.duration=12;config.canvas.fps=60;
   const scene=prepareScene(config),[intro,writing,outro]=previewPhases(scene);
   assert.equal(intro.end-intro.start,0);

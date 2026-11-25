@@ -64,7 +64,7 @@ const rotateBoxAround=(b:Box,pivot:Point,angle:number):Box=>{
 function effectivePerson(source:PersonConfig,enabled:boolean):PersonConfig{
  const person=structuredClone(source);
  // Geometry presets are fixed; only the visible size and position compose the scene.
- person.font={...person.font,family:'tyx-brush',size:240,penWidth:source.font.penWidth,pressure:.85,initialScale:1.15,initialOffsetX:0,initialOffsetY:0,terminalLength:1};
+ person.font={...person.font,size:240,penWidth:source.font.penWidth,pressure:.85,initialScale:1.15,initialOffsetX:0,initialOffsetY:0,terminalLength:1};
  if(!isDecorationId(person.decoration.id))person.decoration.id='none';
  person.decoration={...person.decoration,action:'wink',earFold:true,playful:true};
  person.underline={enabled:false,lift:false};
@@ -130,7 +130,7 @@ function prepareBrush(person:PersonConfig,config:WebConfig):PreparedBrush{
  const traced=person.signatureSource==='trace'&&person.trace;
  const key=traced?'trace:'+JSON.stringify(traced):'typed:'+person.name,cached=brushCache.get(key);if(cached){brushCache.delete(key);brushCache.set(key,cached);return cached;}
  const referencePerson={...person,font:{...person.font,penWidth:1}};
- const brush=traced?buildTraceBrush(traced):buildWebBrush(asBrushConfig(referencePerson,config),'classic','tyx-brush');brushCache.set(key,brush);if(brushCache.size>12)brushCache.delete(brushCache.keys().next().value!);return brush;
+ const brush=traced?buildTraceBrush(traced):buildWebBrush(asBrushConfig(referencePerson,config),'classic',referencePerson.font.family);brushCache.set(key,brush);if(brushCache.size>12)brushCache.delete(brushCache.keys().next().value!);return brush;
 }
 
 export function prepareScene(input:WebConfig):PreparedScene{
@@ -307,10 +307,17 @@ function reactionPoint(group:PersonScene,id:string,p:Point,time:number):Point{
 export function decorationPoint(scene:PreparedScene,index:0|1,strokeId:string,u:number,time:number):Point|null{
  const group=scene.people.find(g=>g.index===index),stroke=group?.decoration.strokes.find(s=>s.id===strokeId);if(!group||!stroke)return null;const raw=stroke.curve?pointAt(stroke.curve,clamp(u,0,1)):stroke.eye;if(!raw)return null;const p=reactionPoint(group,stroke.id,raw,time),d=group.decoration,q=world({x:d.center.x+p.x*d.radius/50,y:d.center.y+p.y*d.radius/50},group);return {x:q.x+group.config.decoration.offsetX*scene.width,y:q.y+group.config.decoration.offsetY*scene.height};
 }
-function drawDecoration(context:CanvasRenderingContext2D,scene:Pick<PreparedScene,'width'|'height'>,group:PersonScene,time:number):void{
+function drawDecoration(context:CanvasRenderingContext2D,scene:Pick<PreparedScene,'width'|'height'|'config'>,group:PersonScene,time:number):void{
  const {decoration:d,config,plan}=group;if(!d.strokes.length||time<plan.decoration.start)return;
+ // 装饰进书写轨迹：装饰跟随签名书写笔画的当前位置
+ let trajectoryOffset={x:0,y:0};
+ if(scene.config.animation.decorationTrajectory&&time>=plan.writing.start&&time<plan.writing.end){
+  const phase0=group.plan.writing,u0=clamp((time-phase0.start)/(phase0.end-phase0.start),0,1);
+  const pen=strokeAt(group.brush,clamp(u0+.022*Math.sin(Math.PI*2*u0)-.012*Math.sin(Math.PI*4*u0),0,1)*group.brush.duration);
+  if(pen){trajectoryOffset={x:(pen.point.x-group.brush.box.minX)*group.scale*.12,y:(pen.point.y-group.brush.box.minY)*group.scale*.12};}
+ }
  const center=world(d.center,group),scale=d.radius/50*group.scale,mesh=decorationMesh(d),phase=plan.decoration,u=phase.end<=phase.start?(time>=phase.end?1:0):clamp((time-phase.start)/(phase.end-phase.start),0,1),natural=clamp(u+.022*Math.sin(TAU*u)-.012*Math.sin(TAU*2*u),0,1),paths=new Map<string,Path2D>();
- context.save();context.translate(center.x+config.decoration.offsetX*scene.width,center.y+config.decoration.offsetY*scene.height);context.rotate(group.angle+config.decoration.rotation*Math.PI/180);context.scale(scale,scale);
+ context.save();context.translate(center.x+config.decoration.offsetX*scene.width+trajectoryOffset.x,center.y+config.decoration.offsetY*scene.height+trajectoryOffset.y);context.rotate(group.angle+config.decoration.rotation*Math.PI/180);context.scale(scale,scale);
  for(const stroke of mesh.strokes){
   const p=brushProgress((natural-stroke.start)/stroke.duration);if(p<=0)continue;const source=mesh.sources.get(stroke.id)!,key=source.color??'',path=paths.get(key)??new Path2D();paths.set(key,path);
   appendCapsules(path,partialDecorationSamples(stroke,p).map(sample=>({...sample,...reactionPoint(group,source.id,sample,time)})));
@@ -328,8 +335,8 @@ export function renderDecorationThumbnail(canvas:HTMLCanvasElement,id:string,sou
  const person=effectivePerson(source,false);person.decoration={...person.decoration,id,offsetX:0,offsetY:0};
  const brush=prepareBrush(person,config),decoration=prepareDecoration(person,brush);if(!decoration.strokes.length)return;
  const bounds=strokeBounds(decoration.strokes),padding=Math.max(10,Math.min(width,height)*.12),fit=Math.min((width-padding*2)/Math.max(1,bounds.maxX-bounds.minX),(height-padding*2)/Math.max(1,bounds.maxY-bounds.minY)),unit=decoration.radius/50,scale=fit/Math.max(.001,unit),center={x:width/2,y:height/2};
- const group:PersonScene={index:0,config:person,brush,plan:makePlan(config,person),baseScale:scale,scale,angle:person.decoration.rotation*Math.PI/180,tx:center.x-decoration.center.x*scale-(bounds.minX+bounds.maxX)*fit/2,ty:center.y-decoration.center.y*scale-(bounds.minY+bounds.maxY)*fit/2,center,anchor:{x:0,y:0},decoration,bounds,signatureBounds:brush.box};
- drawDecoration(context,{width,height},group,config.timing.duration);
+ const group:PersonScene={index:0,config:person,brush,plan:makePlan(config,person),baseScale:scale,scale,angle:0,tx:center.x-decoration.center.x*scale-(bounds.minX+bounds.maxX)*fit/2,ty:center.y-decoration.center.y*scale-(bounds.minY+bounds.maxY)*fit/2,center,anchor:{x:0,y:0},decoration,bounds,signatureBounds:brush.box};
+ drawDecoration(context,{width,height,config},group,config.timing.duration);
 }
 
 // Optional ornament ink joins the same source mesh, so it cannot remain behind

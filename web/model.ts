@@ -6,12 +6,17 @@ import {traceSchema} from './tracing';
 import {introPresets,outroPresets} from './animation-catalog';
 import {ornatePresets} from './ornate-types';
 import {gradientSchema} from './gradient';
+import {hasChinese} from '../assets/fonts/tyx-brush/chinese';
 
 const color = z.string().regex(/^#[\da-f]{6}$/i, '请选择有效的颜色');
 const finite = (min:number,max:number) => z.number().finite().min(min).max(max);
 const retiredOutroIds=new Set<string>(['stardust','ripple',...ornatePresets.map(preset=>preset.id)]);
 export const fontFamilies = [
   {id:'tyx-brush',name:'TYX Brush · 原作连笔'},
+  {id:'tyx-soft',name:'TYX Soft · 柔和圆笔'},
+  {id:'tyx-bold',name:'TYX Bold · 粗犷豪放'},
+  {id:'tyx-elegant',name:'TYX Elegant · 优雅行书'},
+  {id:'tyx-modern',name:'TYX Modern · 现代简笔'},
 ] as const;
 export const personSchema = z.object({
   name:z.string().max(40,'最多输入 40 个字符'),
@@ -20,7 +25,7 @@ export const personSchema = z.object({
   // Retain old values when reading saved designs; the website uses the authored glyphs directly.
   scheme:z.enum(['classic','loop','sweep']).default('classic'),
   position:z.object({x:finite(-.45,.45),y:finite(-.45,.45),scale:finite(.45,3),rotation:finite(-20,20)}),
-  font:z.object({family:z.enum(['tyx-brush','tyx-soft']).default('tyx-brush'),size:finite(48,320),penWidth:finite(.5,2),pressure:finite(0,1),initialScale:finite(1,1.6),initialOffsetX:finite(-120,120),initialOffsetY:finite(-120,120),terminalLength:finite(.5,1.8)}),
+  font:z.object({family:z.enum(['tyx-brush','tyx-soft','tyx-bold','tyx-elegant','tyx-modern']).default('tyx-brush'),size:finite(48,320),penWidth:finite(.5,2),pressure:finite(0,1),initialScale:finite(1,1.6),initialOffsetX:finite(-120,120),initialOffsetY:finite(-120,120),terminalLength:finite(.5,1.8)}),
   ink:z.object({color,gradient:gradientSchema.optional()}),
   glow:z.object({enabled:z.boolean(),color,strength:finite(0,1),radius:finite(0,48)}),
   decoration:z.object({id:z.enum(STORED_DECORATION_IDS),scale:finite(.3,3),offsetX:finite(-.45,.45),offsetY:finite(-.45,.45),rotation:finite(-45,45).default(0),action:z.enum(['wink','none']),earFold:z.boolean(),playful:z.boolean().default(true)}),
@@ -38,7 +43,8 @@ export const webSchema = z.object({
     intro:z.enum(introPresets.map(preset=>preset.id)).default('classic'),
     // Retired effects fall back without discarding the rest of an existing saved design.
     outro:z.preprocess(value=>typeof value==='string'&&retiredOutroIds.has(value)?'classic':value,z.enum(outroPresets.map(preset=>preset.id))).default('classic'),
-  }).strict().default({introOutroEnabled:true,intro:'classic',outro:'classic'}),
+    decorationTrajectory:z.boolean().default(false),
+  }).strict().default({introOutroEnabled:true,intro:'classic',outro:'classic',decorationTrajectory:false}),
   effects:z.object({sparkles:z.boolean(),hearts:z.boolean(),intensity:finite(0,1)}),
   audio:z.object({start:finite(0,3600),volume:finite(0,1),fadeIn:finite(0,3),fadeOut:finite(0,3)}),
 }).strict().superRefine((c,ctx)=>{
@@ -48,8 +54,8 @@ export const webSchema = z.object({
       if(!person.trace?.strokes.some(stroke=>stroke.points.length>0))ctx.addIssue({code:'custom',path:['people',i,'trace'],message:`${prefix}请先描写签名并完成应用`});
       continue;
     }
-    if(!name||!/[a-z]/i.test(name))ctx.addIssue({code:'custom',path:['people',i,'name'],message:`${prefix}至少输入一个英文字母`});
-    else if(!/^[A-Za-z '\-]+$/.test(name))ctx.addIssue({code:'custom',path:['people',i,'name'],message:`${prefix}请使用英文字母、空格、英文撇号或连字符`});
+    if(!name||!/[a-z一-鿿]/i.test(name))ctx.addIssue({code:'custom',path:['people',i,'name'],message:`${prefix}至少输入一个英文字母或汉字`});
+    else if(!/^[A-Za-z一-鿿 '\-]+$/.test(name))ctx.addIssue({code:'custom',path:['people',i,'name'],message:`${prefix}请使用英文字母、汉字、空格、英文撇号或连字符`});
   }
   if(c.timing.duration-c.timing.hold<2)ctx.addIssue({code:'custom',path:['timing','hold'],message:'请为书写和收尾保留至少 2 秒，缩短定格或增加总时长'});
 });
