@@ -3,7 +3,7 @@ import {resolveMotionSelection,type IntroPreset,type OutroPreset} from './animat
 import type {WebConfig} from './model';
 import {renderAnimationThumbnail,type AnimationThumbnailKind} from './animation-thumbnail-renderer';
 
-const queue=new Set<()=>void>();
+const queue=new Set<()=>void|Promise<void>>();
 let scheduled:number|undefined;
 function paintNext(){
   scheduled=undefined;
@@ -11,7 +11,7 @@ function paintNext(){
   if(next){queue.delete(next);next();}
   if(queue.size)scheduled=requestAnimationFrame(paintNext);
 }
-function enqueue(paint:()=>void){
+function enqueue(paint:()=>void|Promise<void>){
   queue.add(paint);scheduled??=requestAnimationFrame(paintNext);
   return ()=>{queue.delete(paint);if(!queue.size&&scheduled!==undefined){cancelAnimationFrame(scheduled);scheduled=undefined;}};
 }
@@ -23,8 +23,8 @@ export function AnimationThumbnail({kind,preset,config}:{kind:AnimationThumbnail
   useEffect(()=>{
     const target=canvas.current;if(!target)return;
     let cancel:(()=>void)|undefined;
-    const paint=()=>{cancel=enqueue(()=>{
-      try{renderAnimationThumbnail(target,kind,preset,latest.current);}
+    const paint=()=>{cancel=enqueue(async()=>{
+      try{await renderAnimationThumbnail(target,kind,preset,latest.current);}
       catch{/* Keep the previous image while an unfinished signature input is invalid. */}
     });};
     if(typeof IntersectionObserver==='undefined'){paint();return ()=>cancel?.();}

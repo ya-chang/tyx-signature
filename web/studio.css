@@ -173,7 +173,7 @@
 .complete-preview-button[aria-pressed='true'] { color: var(--accent-ink); border-color: var(--accent); background: var(--accent-wash); }
 .canvas-mode-label { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font: 11px/18px var(--font-ui); white-space: nowrap; }
 .canvas-mode-label::before { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); content: ''; }
-.canvas-stage { position: relative; display: flex; align-items: center; justify-content: center; flex: 1 1 0; min-width: 0; min-height: 0; overflow: hidden; isolation: isolate; contain: size; padding: 18px 36px 24px; }
+.canvas-stage { position: relative; display: flex; align-items: center; justify-content: center; flex: 1 1 0; min-width: 0; min-height: 0; overflow: hidden; isolation: isolate; contain: size; padding: 8px 12px 10px; }
 .canvas-surface { position: absolute; z-index: 1; top: 50%; left: 50%; max-width: 100%; max-height: 100%; overflow: visible; border-radius: 3px; background: var(--paper); box-shadow: 0 4px 20px rgba(39,48,69,.1), 0 0 0 1px rgba(39,48,69,.035); transform: translate(-50%,-50%); }
 .canvas-surface > canvas { display: block; width: 100%; height: 100%; border-radius: 3px; touch-action: none; }
 .canvas-surface.is-draggable, .canvas-element-target { cursor: grab; touch-action: none; }
@@ -236,7 +236,7 @@
   .topbar { padding-right: 32px; padding-left: 28px; }
   .editor-inspector-heading { padding-right: 64px; }
   .preview-toolbar { padding-right: 48px; padding-left: 48px; }
-  .canvas-stage { padding: 26px 64px 34px; }
+  .canvas-stage { padding: 10px 20px 12px; }
   .animation-controls { padding-right: 48px; padding-left: 48px; }
 }
 
@@ -254,7 +254,7 @@
   .top-actions { gap: 10px; }
   .project-title { width: min(240px, 26vw); }
   .preview-toolbar { padding-right: 22px; padding-left: 22px; }
-  .canvas-stage { padding-right: 26px; padding-left: 26px; }
+  .canvas-stage { padding-right: 12px; padding-left: 12px; }
   .preview-tools { gap: 8px; }
   .animation-controls { padding-right: 22px; padding-left: 22px; }
   .phase-button { gap: 4px; padding-right: 6px; padding-left: 6px; }
@@ -270,7 +270,7 @@
   .canvas-mode-label { display: none; }
   .phase-track { grid-template-columns: 62px repeat(3, minmax(0, 1fr)); gap: 5px; }
   .phase-button i { display: none; }
-  .canvas-stage { padding: 14px 20px 20px; }
+  .canvas-stage { padding: 8px 12px 10px; }
 }
 
 /* 手机与小屏（≤760px）：单列、画布优先、设置栏沉到下方并可收起 */
@@ -301,7 +301,7 @@
   .preview-title > span { padding-left: 8px; font-size: 10px; }
   .preview-tools { gap: 6px; }
   .canvas-mode-label { display: none; }
-  .canvas-stage { padding: 12px 18px 18px; }
+  .canvas-stage { padding: 6px 10px 8px; }
   .canvas-help { padding: 0 16px 10px; font-size: 10px; }
   .animation-controls { gap: 9px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
   .control-toolbar { gap: 10px; }
@@ -380,7 +380,7 @@
   .workspace { gap: 0; }
   .canvas-column { order: -1; height: clamp(220px, calc(100dvh - 250px), 380px); min-height: 200px; border-bottom: 0; }
   .preview-toolbar { min-height: 42px; padding: 6px 14px; }
-  .canvas-stage { padding: 6px 14px 10px; }
+  .canvas-stage { padding: 4px 8px 6px; }
   .animation-controls { gap: 6px; padding: 8px 14px calc(8px + env(safe-area-inset-bottom)); }
   .phase-track { grid-template-columns: 56px repeat(3, minmax(0, 1fr)); gap: 4px; }
   .phase-button { min-height: 32px; padding: 4px; font-size: 10px; }
@@ -398,7 +398,7 @@
 @media (max-height: 650px) and (min-width: 761px) {
   .app-shell { grid-template-rows: 56px minmax(0,1fr); min-height: 440px; }
   .preview-toolbar { min-height: 47px; padding-top: 8px; padding-bottom: 8px; }
-  .canvas-stage { padding-top: 8px; padding-bottom: 14px; }
+  .canvas-stage { padding-top: 4px; padding-bottom: 8px; }
   .canvas-help { padding-bottom: 9px; }
   .animation-controls { gap: 7px; padding-top: 10px; padding-bottom: 8px; }
   .phase-button { min-height: 30px; padding-top: 5px; padding-bottom: 5px; }

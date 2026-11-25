@@ -12,7 +12,7 @@ import {drawClassicEntryParticle} from './entry-particle-artwork';
 import {canvasGradient,gradientPaint,blendGradient,type GradientConfig,type LinearGradientPaint} from './gradient';
 
 type Phase={start:number;end:number};
-export type ContinuousGroup={index:0|1;brush:PreparedBrush;scale:number;angle:number;tx:number;ty:number;center:Point;plan:{writing:Phase;outro:Phase};config:{font:{penWidth:number;pressure:number};ink:{color:string;gradient?:GradientConfig};glow:{enabled:boolean;color:string;strength:number;radius:number}};particles?:boolean;radiusAt?:(stroke:PreparedStroke,u:number)=>number;colorAt?:(stroke:PreparedStroke)=>string|undefined;deformPoint?:(id:string,p:Point,time:number)=>Point;deformRadius?:(id:string,time:number)=>number;deformPhase?:Phase};
+export type ContinuousGroup={index:0|1;brush:PreparedBrush;scale:number;angle:number;tx:number;ty:number;center:Point;plan:{writing:Phase;outro:Phase};config:{font:{penWidth:number;pressure:number};ink:{color:string;gradient?:GradientConfig};glow:{enabled:boolean;color:string;strength:number;radius:number}};particles?:boolean;radiusAt?:(stroke:PreparedStroke,u:number)=>number;colorAt?:(stroke:PreparedStroke)=>string|undefined;deformPoint?:(id:string,p:Point,time:number)=>Point;deformRadius?:(id:string,time:number)=>number;deformPhase?:Phase;trajectoryAt?:(time:number)=>{x:number;y:number}};
 type Vertex=InkSample&{strokeU:number;targetU:number};
 type InkChunk={id:number;group:ContinuousGroup;stroke:PreparedStroke;from:number;to:number;part:number;vertices:Vertex[];fullPath?:Path2D};
 type RibbonKey={frame:number;center:Point;centerline:Point[];widths:number[];opacity:number};

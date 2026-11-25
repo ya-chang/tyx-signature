@@ -1,4 +1,4 @@
-import {prepareScene,renderScene} from './renderer';
+import {prepareScene,renderScene,ensureContinuous} from './renderer';
 import {resolveMotionSelection,type IntroPreset,type OutroPreset} from './animation-catalog';
 import type {WebConfig} from './model';
 
@@ -45,7 +45,7 @@ function artworkBounds(frame:HTMLCanvasElement,mask:HTMLCanvasElement){
 }
 
 /** Draw a real representative frame, then fit the visible art rather than the empty artboard. */
-export function renderAnimationThumbnail(canvas:HTMLCanvasElement,kind:AnimationThumbnailKind,preset:IntroPreset|OutroPreset,source:WebConfig):void{
+export async function renderAnimationThumbnail(canvas:HTMLCanvasElement,kind:AnimationThumbnailKind,preset:IntroPreset|OutroPreset,source:WebConfig):Promise<void>{
   const ctx=canvas.getContext('2d');if(!ctx)return;
   if(preset==='none'){
     ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#10131b';ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -54,7 +54,9 @@ export function renderAnimationThumbnail(canvas:HTMLCanvasElement,kind:Animation
     ctx.arc(cx,cy,r,0,Math.PI*2);ctx.moveTo(cx-r*.7,cy+r*.7);ctx.lineTo(cx+r*.7,cy-r*.7);ctx.stroke();
     return;
   }
-  const scene=prepareScene(thumbnailConfig(source,kind,preset)),plan=scene.people[0].plan;
+  const scene=prepareScene(thumbnailConfig(source,kind,preset));
+  await ensureContinuous(scene);
+  const plan=scene.people[0].plan;
   const time=kind==='intro'?plan.writing.start*.52:plan.outro.start+(scene.duration-plan.outro.start)*.60;
   const {frame,mask}=sharedSurfaces();
   // One shared full-size surface preserves the production renderer's glow and
