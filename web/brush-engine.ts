@@ -1,7 +1,6 @@
 import {buildBrush,brushProgress,parseStroke,type BrushStroke} from '../src/brush';
 import {pointAt,pointBounds,sampleCubic,type Box,type Curve,type Point} from '../src/geometry';
 import {initials,middle,endings,metrics,type PenGlyph} from '../assets/fonts/tyx-brush/positional';
-import {chineseGlyphs,isChineseChar} from '../assets/fonts/tyx-brush/chinese';
 import type {SignatureConfig} from '../src/config';
 import type {Scheme} from './model';
 
@@ -22,24 +21,12 @@ function transformCurve(curve:Curve,transform:(p:Curve['points'][number])=>Point
 }
 
 /** Build TYX centerlines with positional letterforms and case-preserving advances.
- * Chinese characters use their standard stroke order from chineseGlyphs. */
+ * TYX centerlines with positional letterforms and case-preserving advances. */
 function originalLetterStrokes(config:SignatureConfig):{strokes:BrushStroke[];guide:PreparedBrush['guide']}{
- const characters=[...config.name],first=characters.findIndex(ch=>/[A-Za-z\u4e00-\u9fff]/.test(ch)),last=characters.map(ch=>/[A-Za-z\u4e00-\u9fff]/.test(ch)).lastIndexOf(true),factor=config.font.size/320;
+ const characters=[...config.name],first=characters.findIndex(ch=>/[A-Za-z]/.test(ch)),last=characters.map(ch=>/[A-Za-z]/.test(ch)).lastIndexOf(true),factor=config.font.size/320;
  const strokes:BrushStroke[]=[],dots:BrushStroke[]=[];let cursor=0;
  characters.forEach((char,index)=>{
   if(char===' '){cursor+=62*factor;return;}
-  if(isChineseChar(char)){
-   const glyph=chineseGlyphs[char];
-   const isLead=index===first,isTerminal=index===last;
-   const scale=isLead?config.font.initialScale:1;
-   (glyph?glyph.strokes:['M 10 -50 L 90 -50']).forEach((source,strokeIndex)=>{
-    const curve=transformCurve(parseStroke(source),p=>({x:cursor+p.x*factor*scale+(isLead?config.font.initialOffsetX:0),y:p.y*factor*scale+(isLead?config.font.initialOffsetY:0)}));
-    const stroke:BrushStroke={id:`brush-${index}-${strokeIndex}`,char,index:strokeIndex,curve,start:0,duration:Math.max(.075,Math.pow(curve.length,.76)/275),width:config.font.size*(isTerminal?.034:.040)*config.font.penWidth*(isLead?Math.sqrt(config.font.initialScale):1),position:isTerminal?'terminal':'medial',dot:false};
-    strokes.push(stroke);
-   });
-   cursor+=(glyph?glyph.advance:100)*factor*scale;
-   return;
-  }
   const cap=initials[char],base=middle[char],isLead=index===first;
   const position:BrushStroke['position']=cap&&isLead?'initial':base&&index===last?'terminal':cap||base?'medial':'punctuation';
   const glyph:PenGlyph=cap??base??(char==="'"?{advance:38,paths:['M 20 -157 C 28 -167 30 -181 29 -186']}:{advance:65,paths:['M 0 -57 C 19 -60 44 -60 65 -57']});
@@ -92,7 +79,7 @@ export function buildWebBrush(config:SignatureConfig,_scheme:Scheme,family:'tyx-
   if(index>0)clock+=source.dot?.065:lift<3?.009:letterChanged?.065*.8:.035*.8;
   const duration=source.dot?.10:Math.max(.075,Math.pow(source.curve.length,.76)/275)*(1+.055*Math.sin(index*1.7))*profile.timingMul;
   const stroke={...source,start:clock,duration,width:source.width*profile.widthMul};clock+=stroke.duration;
-  const count=Math.max(2,Math.ceil(stroke.curve.length/Math.max(1.3,size*.007)));
+  const count=Math.max(2,Math.ceil(stroke.curve.length/Math.max(1.3,size*.0035)));
   const samples=Array.from({length:count+1},(_,i)=>{const u=i/count;return {...pointAt(stroke.curve,u),u,radius:inkRadius(stroke,u,clamp01(config.font.pressure*profile.pressureMul))};});
   return {...stroke,samples};
  });
@@ -106,7 +93,7 @@ export function inkRadius(s:BrushStroke,u:number,pressure:number):number{
  const dy=after.y-before.y,len=Math.hypot(after.x-before.x,dy)||1;
  const end=s.position==='medial'?.52:.07,start=.42;
  const taper=Math.min(1,start+u*18,end+(1-u)*18);
- const nib=(.67+.33*Math.max(0,dy/len))*(.98+.02*Math.sin(u*Math.PI*3))*taper;
+ const nib=(.67+.33*Math.max(0,dy/len))*(.99+.01*Math.sin(u*Math.PI*1.5))*taper;
  return Math.max(.015,s.width/2*((1-pressure)*.78+pressure*nib));
 }
 

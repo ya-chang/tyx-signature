@@ -6,7 +6,6 @@ import {traceSchema} from './tracing';
 import {introPresets,outroPresets} from './animation-catalog';
 import {ornatePresets} from './ornate-types';
 import {gradientSchema} from './gradient';
-import {hasChinese} from '../assets/fonts/tyx-brush/chinese';
 
 const color = z.string().regex(/^#[\da-f]{6}$/i, '请选择有效的颜色');
 const finite = (min:number,max:number) => z.number().finite().min(min).max(max);
@@ -54,8 +53,8 @@ export const webSchema = z.object({
       if(!person.trace?.strokes.some(stroke=>stroke.points.length>0))ctx.addIssue({code:'custom',path:['people',i,'trace'],message:`${prefix}请先描写签名并完成应用`});
       continue;
     }
-    if(!name||!/[a-z一-鿿]/i.test(name))ctx.addIssue({code:'custom',path:['people',i,'name'],message:`${prefix}至少输入一个英文字母或汉字`});
-    else if(!/^[A-Za-z一-鿿 '\-]+$/.test(name))ctx.addIssue({code:'custom',path:['people',i,'name'],message:`${prefix}请使用英文字母、汉字、空格、英文撇号或连字符`});
+    if(!name||!/[a-z]/i.test(name))ctx.addIssue({code:'custom',path:['people',i,'name'],message:`${prefix}至少输入一个英文字母`});
+    else if(!/^[A-Za-z '\-]+$/.test(name))ctx.addIssue({code:'custom',path:['people',i,'name'],message:`${prefix}请使用英文字母、空格、英文撇号或连字符`});
   }
   if(c.timing.duration-c.timing.hold<2)ctx.addIssue({code:'custom',path:['timing','hold'],message:'请为书写和收尾保留至少 2 秒，缩短定格或增加总时长'});
 });
@@ -75,7 +74,6 @@ export function defaultWebConfig():WebConfig{
 function simplifyDesign(config:WebConfig):WebConfig{
   for(const person of config.people){
     person.scheme='classic';
-    person.font.family='tyx-brush';
     // Fold the previous two size controls into the sole scale value once.
     person.position.scale=clamp(person.position.scale*person.font.size/240,.45,3);
     person.font.size=240;

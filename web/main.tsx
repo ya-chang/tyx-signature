@@ -53,7 +53,7 @@ function App(){
   const [selected,setSelected]=useState<0|1>(0),[tab,setTab]=useState<Tab>('signature');
   const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
   const openPanel=(panel:Tab)=>{setTab(panel);setSidebarCollapsed(false);};
-  const [format,setFormat]=useState<OutputFormat>(initial.config.canvas.transparent?'gif':'mp4');
+  const [format,setFormat]=useState<OutputFormat>('mp4');
   const [decorationCategory,setDecorationCategory]=useState<DecorationCategory>(()=>categoryForDecoration(initial.config.people[0].decoration.id)??'pets');
   const [exportOpen,setExportOpen]=useState(false);
   const [traceTarget,setTraceTarget]=useState<0|1|null>(null);
@@ -180,7 +180,6 @@ function App(){
       return next;
     });
   },[config.people[0].decoration.id,config.people[1].decoration.id]);
-  useEffect(()=>{if(config.canvas.transparent)setFormat('gif');},[config.canvas.transparent]);
   useEffect(()=>{
     const dialog=exportDialog.current;if(!dialog)return;
     if(exportOpen&&!dialog.open)dialog.showModal();
@@ -223,7 +222,7 @@ function App(){
   };
   const generate=async()=>{
     if(busy||prepared.error)return;
-    const outputFormat:OutputFormat=config.canvas.transparent?'gif':format;
+    const outputFormat:OutputFormat=format;
     setPauseToken(value=>value+1);audition.current?.pause();
     setJob({status:'checking',progress:0,stage:outputFormat==='gif'?'正在准备 GIF…':'正在检查当前浏览器…'});
     const controller=new AbortController();abort.current=controller;
@@ -357,8 +356,8 @@ function App(){
                 {([['landscape','横屏','16:9'],['portrait','竖屏','9:16'],['square','方形','1:1']] as const).map(([id,label,size])=><button type="button" className="format-option" key={id} aria-pressed={config.canvas.aspect===id} onClick={()=>update(next=>{next.canvas.aspect=id;})}>{label}<small>{size}</small></button>)}
               </div>
               <PaintField title="背景" value={config.canvas.background} gradient={config.canvas.gradient} onEditCommit={endGesture} onChange={value=>update(next=>{next.canvas.background=value;})} onGradientChange={gradient=>update(next=>{next.canvas.gradient=gradient;})}/>
-              <Toggle title="透明背景" checked={config.canvas.transparent} onChange={value=>{update(next=>{next.canvas.transparent=value;});if(value)setFormat('gif');}}/>
-              {config.canvas.transparent&&<p className="export-note">已使用透明背景，导出格式为 GIF。</p>}
+              <Toggle title="透明背景" checked={config.canvas.transparent} onChange={value=>{update(next=>{next.canvas.transparent=value;});}}/>
+              {config.canvas.transparent&&<p className="export-note">已使用透明背景。GIF 可保留透明，MP4 导出将使用背景色填充。</p>}
             </section>
           </div>}
           {tab==='animation'&&<div className="inspector-cards">
@@ -390,6 +389,9 @@ function App(){
         </fieldset>
       </MorphNav>
       <section className="canvas-column" aria-label="作品预览">
+        <div className="canvas-toolbar">
+          <button type="button" className="icon-button reset-default-button" aria-label="重置为默认设计" title="重置为默认设计" disabled={busy} onClick={()=>{reset();}}><Icon name="reset" size={18}/></button>
+        </div>
         {(notice||prepared.error)&&<div className={['notice',prepared.error?'error':'warning'].join(' ')} role={prepared.error?'alert':'status'}><span>{prepared.error||notice}</span>{!prepared.error&&<button className="notice-close" aria-label="关闭提示" onClick={()=>setNotice('')}><Icon name="close" size={14}/></button>}</div>}
         {scene?<Preview disabled={busy} onStartPlayback={()=>audition.current?.pause()} scene={scene} selected={selected} config={config} audioUrl={audioUrl} pauseToken={pauseToken} completeToken={completeToken} previewRequest={motionPreview} onSelect={setSelected} onSelectElement={(index,target)=>{setSelected(index);setTab(target==='decoration'?'decoration':'signature');}} onGestureStart={beginGesture} onGestureEnd={endGesture} onDrag={(index,target,dx,dy)=>{
           if(busy)return;setSelected(index);update(next=>{const moving=next.people[index];if(target==='signature'){moving.position.x=clamp(moving.position.x+dx,-.45,.45);moving.position.y=clamp(moving.position.y+dy,-.45,.45);}else{moving.decoration.offsetX=clamp(moving.decoration.offsetX+dx,-.45,.45);moving.decoration.offsetY=clamp(moving.decoration.offsetY+dy,-.45,.45);}});
@@ -405,7 +407,7 @@ function App(){
             <section className="inspector-group">
               <h2 className="group-title">带走你的签名</h2>
               <div className="format-switch" role="group" aria-label="导出格式">
-                <button type="button" className="output-choice" aria-pressed={format==='mp4'} disabled={config.canvas.transparent} title={config.canvas.transparent?'透明背景请使用 GIF；关闭透明背景后可选择 MP4':'普通视频，可选配乐'} onClick={()=>setFormat('mp4')}>MP4<small>视频</small></button>
+                <button type="button" className="output-choice" aria-pressed={format==='mp4'} title={config.canvas.transparent?'MP4 不支持透明通道，导出将使用背景色填充':'普通视频，可选配乐'} onClick={()=>setFormat('mp4')}>MP4<small>视频</small></button>
                 <button type="button" className="output-choice" aria-pressed={format==='gif'} onClick={()=>setFormat('gif')}>GIF<small>动图</small></button>
               </div>
               <p className="export-note">{format==='gif'?(config.canvas.transparent?'透明动图，可叠加使用；GIF 不包含音频。':'循环动图，使用当前背景；GIF 不包含音频。'):'普通视频，支持配乐。时长和帧率在“动画”中调整，比例和背景在“画面”中调整。'}</p>

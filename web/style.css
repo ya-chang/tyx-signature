@@ -47,3 +47,5 @@
 .font-family-bold{font-weight:700}
 .font-family-soft{font-weight:400}
 .font-family-elegant{font-style:italic}
+
+.canvas-toolbar{display:flex;align-items:center;justify-content:flex-end;padding:4px 8px 0}.reset-default-button{background:var(--glass-field);border:1px solid var(--line);color:var(--muted);width:34px;height:34px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;transition:color .15s,border-color .15s}.reset-default-button:hover:not(:disabled){color:var(--ink);border-color:var(--ink)}.reset-default-button:disabled{opacity:.5}

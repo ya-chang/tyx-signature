@@ -17,7 +17,7 @@ test('bad files, unsupported versions, nonfinite values and invalid timing are r
   const c=defaultWebConfig();assert.throws(()=>validateConfig({...c,version:1}));
   c.people[0].font.penWidth=Infinity;assert.throws(()=>validateConfig(c));
   const short=defaultWebConfig();short.timing.duration=3;short.timing.hold=2;assert.throws(()=>validateConfig(short),/至少 2 秒/);
-  const invalidName=defaultWebConfig();invalidName.people[0].name='123';assert.throws(()=>validateConfig(invalidName),/英文字母或汉字/);
+  const invalidName=defaultWebConfig();invalidName.people[0].name='123';assert.throws(()=>validateConfig(invalidName),/英文字母/);
 });
 test('corrupt or inaccessible storage recovers with an explicit warning',()=>{
   assert.equal(loadConfig({getItem:()=>'{'}).config.version,2);
@@ -28,7 +28,7 @@ test('a saved website design without a font family keeps the original brush when
   const restored=validateConfig(c);assert.equal(restored.people[0].font.family,'tyx-brush');
   restored.people[1].font.family='tyx-soft';restored.people[1].decoration.id='rabbit';
   const imported=parseConfigFile(JSON.stringify(restored));
-  assert.equal(imported.people[1].font.family,'tyx-brush');
+  assert.equal(imported.people[1].font.family,'tyx-soft');
   assert.equal(imported.people[1].decoration.id,'none');
 });
 test('an unfinished second name does not block single mode and is retained when switching back',()=>{

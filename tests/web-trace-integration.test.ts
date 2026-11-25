@@ -119,7 +119,7 @@ test('invalid tracing data cannot be applied or overwrite a valid saved design',
   const tooMany=fixture();tooMany.people[0].trace!.strokes=[{join:false,pointerType:'mouse',points:Array.from({length:40001},(_,i)=>({x:i/40001,y:.5,t:i}))}];invalids.push(tooMany);
   const image=fixture();invalids.push({...image,people:[{...image.people[0],trace:{...image.people[0].trace,referenceImage:'data:image/png;base64,private'}},image.people[1]]});
   for(const invalid of invalids){let writes=0;assert.throws(()=>saveConfig({setItem:()=>{writes++;}},invalid as WebConfig));assert.equal(writes,0);}
-  const typed=fixture();typed.people[0].signatureSource='typed';typed.people[0].name='林清';assert.doesNotThrow(()=>validateConfig(typed));const badTyped=fixture();badTyped.people[0].signatureSource='typed';badTyped.people[0].name='123';assert.throws(()=>validateConfig(badTyped),/英文字母或汉字/);
+  const typed=fixture();typed.people[0].signatureSource='typed';typed.people[0].name='Lin';assert.doesNotThrow(()=>validateConfig(typed));const badTyped=fixture();badTyped.people[0].signatureSource='typed';badTyped.people[0].name='123';assert.throws(()=>validateConfig(badTyped),/英文字母/);
 });
 
 test('trace geometry has its own cache identity, keeps the authored angle and supports real three-times scaling and dragging',()=>{

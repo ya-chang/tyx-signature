@@ -128,7 +128,7 @@ function prepareDecoration(person:PersonConfig,brush:PreparedBrush):PreparedDeco
 const brushCache=new Map<string,PreparedBrush>();
 function prepareBrush(person:PersonConfig,config:WebConfig):PreparedBrush{
  const traced=person.signatureSource==='trace'&&person.trace;
- const key=traced?'trace:'+JSON.stringify(traced):'typed:'+person.name,cached=brushCache.get(key);if(cached){brushCache.delete(key);brushCache.set(key,cached);return cached;}
+ const key=traced?'trace:'+JSON.stringify(traced):'typed:'+person.name+':'+(person.font.family||'tyx-brush'),cached=brushCache.get(key);if(cached){brushCache.delete(key);brushCache.set(key,cached);return cached;}
  const referencePerson={...person,font:{...person.font,penWidth:1}};
  const brush=traced?buildTraceBrush(traced):buildWebBrush(asBrushConfig(referencePerson,config),'classic',referencePerson.font.family);brushCache.set(key,brush);if(brushCache.size>12)brushCache.delete(brushCache.keys().next().value!);return brush;
 }
